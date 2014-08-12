@@ -90,7 +90,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_touch_gestures_OBJECTS = main.$(OBJEXT) int_array.$(OBJEXT) \
-	gestures_device.$(OBJEXT)
+	gestures_device.$(OBJEXT) gesture_detection.$(OBJEXT)
 touch_gestures_OBJECTS = $(am_touch_gestures_OBJECTS)
 touch_gestures_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -235,7 +235,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-touch_gestures_SOURCES = main.c int_array.c gestures_device.c
+touch_gestures_SOURCES = main.c int_array.c gestures_device.c gesture_detection.c
 all: all-am
 
 .SUFFIXES:
@@ -323,6 +323,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gesture_detection.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gestures_device.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/int_array.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
