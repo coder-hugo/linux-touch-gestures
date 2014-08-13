@@ -31,22 +31,22 @@
 
 #include "gesture_detection.h"
 
-struct point_t {
+typedef struct point {
   int x;
   int y;
-};
+} point_t;
 
-struct mt_slots_t {
+typedef struct mt_slots {
   uint8_t active;
-  struct point_t points[2];
-};
+  point_t points[2];
+} mt_slots_t;
 
-struct gesture_start_t {
-  struct point_t point;
+typedef struct gesture_start {
+  point_t point;
   uint32_t distance;
-};
+} gesture_start_t;
 
-enum direction_t { UP, DOWN, LEFT, RIGHT, NONE };
+typedef enum direction { UP, DOWN, LEFT, RIGHT, NONE } direction_t;
 
 static int test_grab(int fd) {
   int rc;
@@ -57,9 +57,9 @@ static int test_grab(int fd) {
   return rc;
 }
 
-static void init_gesture(struct point_t slot_points[2],
+static void init_gesture(point_t slot_points[2],
                          uint8_t finger_count,
-                         struct gesture_start_t *gesture_start) {
+                         gesture_start_t *gesture_start) {
   int32_t x_distance, y_distance;
   gesture_start->point.x = slot_points[0].x;
   gesture_start->point.y = slot_points[0].y;
@@ -100,7 +100,7 @@ static uint8_t process_key_event(struct input_event event) {
 }
 
 static void process_abs_event(struct input_event event,
-                              struct mt_slots_t *mt_slots) {
+                              mt_slots_t *mt_slots) {
   if (event.code == ABS_MT_SLOT) {
     mt_slots->active = event.value;
   } else if (mt_slots->active < 2) {
@@ -117,12 +117,12 @@ static void process_abs_event(struct input_event event,
 
 static void process_syn_event(struct input_event event,
                               configuration_t config,
-                              struct gesture_start_t gesture_start,
-                              struct point_t slot_points[2],
-                              struct point_t thresholds,
+                              gesture_start_t gesture_start,
+                              point_t slot_points[2],
+                              point_t thresholds,
                               uint8_t *finger_count) {
   if (*finger_count > 0 && event.code == SYN_REPORT) {
-    enum direction_t direction = NONE;
+    direction_t direction = NONE;
 
     int32_t x_distance, y_distance;
     x_distance = gesture_start.point.x - slot_points[0].x;
@@ -160,10 +160,10 @@ void process_events(int fd, configuration_t config) {
   struct input_event ev[64];
   int i, rd;
   uint8_t finger_count;
-  struct gesture_start_t gesture_start;
-  struct mt_slots_t mt_slots;
+  gesture_start_t gesture_start;
+  mt_slots_t mt_slots;
 
-  struct point_t thresholds;
+  point_t thresholds;
   thresholds.x = get_axix_threshold(fd, ABS_X, 20);
   thresholds.y = get_axix_threshold(fd, ABS_Y, 20);
 
