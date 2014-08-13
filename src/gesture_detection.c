@@ -46,6 +46,8 @@ struct gesture_start_t {
   uint32_t distance;
 };
 
+enum direction_t { NONE, UP, DOWN, LEFT, RIGHT };
+
 static int test_grab(int fd) {
   int rc;
   rc = ioctl(fd, EVIOCGRAB, (void*)1);
@@ -119,25 +121,27 @@ static void process_syn_event(struct input_event event,
                               struct point_t thresholds,
                               uint8_t *finger_count) {
   if (*finger_count > 0 && event.code == SYN_REPORT) {
+    enum direction_t direction = NONE;
+
     int32_t x_distance, y_distance;
     x_distance = gesture_start.point.x - slot_points[0].x;
     y_distance = gesture_start.point.y - slot_points[0].y;
     if (fabs(x_distance) > fabs(y_distance)) {
       if (x_distance > thresholds.x) {
-        printf("%d fingers left\n", *finger_count);
-        *finger_count = 0;
+        direction = LEFT;
       } else if (x_distance < -thresholds.x) {
-        printf("%d fingers right\n", *finger_count);
-        *finger_count = 0;
+        direction = RIGHT;
       }
     } else {
       if (y_distance > thresholds.y) {
-        printf("%d fingers up\n", *finger_count);
-        *finger_count = 0;
+        direction = UP;
       } else if (y_distance < -thresholds.y) {
-        printf("%d fingers down\n", *finger_count);
-        *finger_count = 0;
+        direction = DOWN;
       }
+    }
+    if (direction != NONE) {
+      printf("fingers: %d, direction: %d\n", *finger_count, direction);
+      *finger_count = 0;
     }
   }
 }
