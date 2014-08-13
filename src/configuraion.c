@@ -22,13 +22,15 @@
  * THE SOFTWARE.
  */
 
-#ifndef GESTURES_DEVICE_H_
-#define GESTURES_DEVICE_H_
+#include <stdint.h>
 
-#include "int_array.h"
+#include "configuraion.h"
 
-int init_uinput(int_array_t keys);
-int destroy_uinput(int fd);
-void send_key(int fd, int key);
-
-#endif // GESTURES_DEVICE_H_
+void clean_config(configuration_t *config) {
+  int32_t i, j;
+  for (i = 0; i < MAX_FINGERS; i++) {
+    for (j = 0; j < DIRECTIONS_COUNT; j++) {
+      config->swipe_keys[i][j].length = 0;
+    }
+  }
+}

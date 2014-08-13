@@ -34,7 +34,7 @@
 #include "common.h"
 #include "gestures_device.h"
 
-int init_uinput(int_array keys) {
+int init_uinput(int_array_t keys) {
   int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
   if(fd < 0) {
       die("error: open");

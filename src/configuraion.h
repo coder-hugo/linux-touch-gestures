@@ -22,13 +22,25 @@
  * THE SOFTWARE.
  */
 
-#ifndef GESTURES_DEVICE_H_
-#define GESTURES_DEVICE_H_
+#ifndef CONFIGURATION_H_
+#define CONFIGURATION_H_
+
+#include <stddef.h>
+#include <stdbool.h>
 
 #include "int_array.h"
 
-int init_uinput(int_array_t keys);
-int destroy_uinput(int fd);
-void send_key(int fd, int key);
+#define MAX_FINGERS       5
+#define DIRECTIONS_COUNT  4
 
-#endif // GESTURES_DEVICE_H_
+struct configuration {
+  bool vert_scroll;
+  bool horz_scroll;
+  int_array_t swipe_keys[MAX_FINGERS][DIRECTIONS_COUNT];
+};
+
+typedef struct configuration configuration_t;
+
+void clean_config(configuration_t *config);
+
+#endif // CONFIGURATION_H_

@@ -37,7 +37,7 @@
 
 
 int main(int argc, char *argv[]) {
-  int_array *keys = new_int_array(1);
+  int_array_t *keys = new_int_array(1);
   keys->data[0] = KEY_D;
   int uinput_fd = init_uinput(*keys);
   free(keys);
@@ -51,7 +51,9 @@ int main(int argc, char *argv[]) {
     if (fd < 0) {
       die("error: open");
     }
-    print_events(fd);
+    configuration_t config;
+    clean_config(&config);
+    process_events(fd, config);
     close(fd);
   }
   return 0;

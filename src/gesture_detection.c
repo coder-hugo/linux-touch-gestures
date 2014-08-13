@@ -46,7 +46,7 @@ struct gesture_start_t {
   uint32_t distance;
 };
 
-enum direction_t { NONE, UP, DOWN, LEFT, RIGHT };
+enum direction_t { UP, DOWN, LEFT, RIGHT, NONE };
 
 static int test_grab(int fd) {
   int rc;
@@ -116,6 +116,7 @@ static void process_abs_event(struct input_event event,
 }
 
 static void process_syn_event(struct input_event event,
+                              configuration_t config,
                               struct gesture_start_t gesture_start,
                               struct point_t slot_points[2],
                               struct point_t thresholds,
@@ -141,6 +142,7 @@ static void process_syn_event(struct input_event event,
     }
     if (direction != NONE) {
       printf("fingers: %d, direction: %d\n", *finger_count, direction);
+      printf("%d\n", config.swipe_keys[*finger_count][direction].length);
       *finger_count = 0;
     }
   }
@@ -154,7 +156,7 @@ static int32_t get_axix_threshold(int fd, int axis, uint8_t percentage) {
   return (absinfo.maximum - absinfo.minimum) * percentage / 100;
 }
 
-void print_events(int fd) {
+void process_events(int fd, configuration_t config) {
   struct input_event ev[64];
   int i, rd;
   uint8_t finger_count;
@@ -193,7 +195,7 @@ void print_events(int fd) {
           process_abs_event(ev[i], &mt_slots);
           break;
         case EV_SYN:
-          process_syn_event(ev[i], gesture_start, mt_slots.points, thresholds, &finger_count);
+          process_syn_event(ev[i], config, gesture_start, mt_slots.points, thresholds, &finger_count);
           break;
       }
     }

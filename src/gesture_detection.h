@@ -25,6 +25,8 @@
 #ifndef GESTURE_DETECTION_H_
 #define GESTURE_DETECTION_H_
 
-void print_events(int fd);
+#include "configuraion.h"
+
+void process_events(int fd, configuration_t config);
 
 #endif // GESTURE_DETECTION_H_

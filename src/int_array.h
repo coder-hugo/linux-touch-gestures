@@ -27,11 +27,13 @@
 
 #include <stddef.h>
 
-typedef struct t_int_array {
+struct int_array {
   size_t length;
   int data[1];
-} int_array;
+};
 
-int_array * new_int_array(size_t length);
+typedef struct int_array int_array_t;
+
+int_array_t * new_int_array(size_t length);
 
 #endif // INTEGER_ARRAY_H_
