@@ -164,8 +164,8 @@ void process_events(int fd, configuration_t config) {
   mt_slots_t mt_slots;
 
   point_t thresholds;
-  thresholds.x = get_axix_threshold(fd, ABS_X, 20);
-  thresholds.y = get_axix_threshold(fd, ABS_Y, 20);
+  thresholds.x = get_axix_threshold(fd, ABS_X, config.horz_threshold_percentage);
+  thresholds.y = get_axix_threshold(fd, ABS_Y, config.vert_threshold_percentage);
 
   if (thresholds.x < 0 || thresholds.y < 0) {
     return;

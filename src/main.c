@@ -53,6 +53,8 @@ int main(int argc, char *argv[]) {
     }
     configuration_t config;
     clean_config(&config);
+    config.horz_threshold_percentage = 15;
+    config.vert_threshold_percentage = 15;
     process_events(fd, config);
     close(fd);
   }

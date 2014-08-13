@@ -27,6 +27,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "int_array.h"
 
@@ -36,6 +37,8 @@
 struct configuration {
   bool vert_scroll;
   bool horz_scroll;
+  uint8_t vert_threshold_percentage;
+  uint8_t horz_threshold_percentage;
   int_array_t swipe_keys[MAX_FINGERS][DIRECTIONS_COUNT];
 };
 
