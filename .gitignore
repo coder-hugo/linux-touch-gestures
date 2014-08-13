@@ -1,6 +1,13 @@
 autoscan.log
 config.log
 config.status
+configure
 Makefile
+Makefile.in
 stamp-h1
 autom4te.cache
+aclocal.m4
+compile
+depcomp
+install-sh
+missing
