@@ -116,29 +116,38 @@ static void process_abs_event(struct input_event event,
 static void process_syn_event(struct input_event event,
                               struct gesture_start_t gesture_start,
                               struct point_t slot_points[2],
+                              struct point_t thresholds,
                               uint8_t *finger_count) {
   if (*finger_count > 0 && event.code == SYN_REPORT) {
     int32_t x_distance, y_distance;
     x_distance = gesture_start.point.x - slot_points[0].x;
     y_distance = gesture_start.point.y - slot_points[0].y;
     if (fabs(x_distance) > fabs(y_distance)) {
-      if (x_distance > 500) {
+      if (x_distance > thresholds.x) {
         printf("%d fingers left\n", *finger_count);
         *finger_count = 0;
-      } else if (x_distance < -500) {
+      } else if (x_distance < -thresholds.x) {
         printf("%d fingers right\n", *finger_count);
         *finger_count = 0;
       }
     } else {
-      if (y_distance > 300) {
+      if (y_distance > thresholds.y) {
         printf("%d fingers up\n", *finger_count);
         *finger_count = 0;
-      } else if (y_distance < -300) {
+      } else if (y_distance < -thresholds.y) {
         printf("%d fingers down\n", *finger_count);
         *finger_count = 0;
       }
     }
   }
+}
+
+static int32_t get_axix_threshold(int fd, int axis, uint8_t percentage) {
+  struct input_absinfo absinfo;
+  if (ioctl(fd, EVIOCGABS(axis), &absinfo) < 0) {
+    return -1;
+  }
+  return (absinfo.maximum - absinfo.minimum) * percentage / 100;
 }
 
 void print_events(int fd) {
@@ -147,6 +156,14 @@ void print_events(int fd) {
   uint8_t finger_count;
   struct gesture_start_t gesture_start;
   struct mt_slots_t mt_slots;
+
+  struct point_t thresholds;
+  thresholds.x = get_axix_threshold(fd, ABS_X, 20);
+  thresholds.y = get_axix_threshold(fd, ABS_Y, 20);
+
+  if (thresholds.x < 0 || thresholds.y < 0) {
+    return;
+  }
 
   if (test_grab(fd) < 0) {
     return;
@@ -172,7 +189,7 @@ void print_events(int fd) {
           process_abs_event(ev[i], &mt_slots);
           break;
         case EV_SYN:
-          process_syn_event(ev[i], gesture_start, mt_slots.points, &finger_count);
+          process_syn_event(ev[i], gesture_start, mt_slots.points, thresholds, &finger_count);
           break;
       }
     }
