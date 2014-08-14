@@ -55,6 +55,8 @@ int main(int argc, char *argv[]) {
     clean_config(&config);
     config.horz_threshold_percentage = 15;
     config.vert_threshold_percentage = 15;
+    config.swipe_keys[3][0].keys[0] = KEY_D;
+    config.swipe_keys[3][0].keys[1] = KEY_A;
     process_events(fd, config);
     close(fd);
   }

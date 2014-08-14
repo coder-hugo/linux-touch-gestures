@@ -27,10 +27,12 @@
 #include "configuraion.h"
 
 void clean_config(configuration_t *config) {
-  int32_t i, j;
+  int32_t i, j, k;
   for (i = 0; i < MAX_FINGERS; i++) {
     for (j = 0; j < DIRECTIONS_COUNT; j++) {
-      config->swipe_keys[i][j].length = 0;
+      for (k = 0; k < MAX_KEYS_PER_GESTURE; k++) {
+        config->swipe_keys[i][j].keys[k] = -1;
+      }
     }
   }
 }

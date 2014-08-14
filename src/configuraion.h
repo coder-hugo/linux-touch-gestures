@@ -31,18 +31,22 @@
 
 #include "int_array.h"
 
-#define MAX_FINGERS       5
-#define DIRECTIONS_COUNT  4
+#define MAX_FINGERS           5
+#define DIRECTIONS_COUNT      4
+#define MAX_KEYS_PER_GESTURE  5
 
-struct configuration {
+typedef struct keys_array {
+  int keys[MAX_KEYS_PER_GESTURE];
+} keys_array_t;
+
+typedef struct configuration {
   bool vert_scroll;
   bool horz_scroll;
   uint8_t vert_threshold_percentage;
   uint8_t horz_threshold_percentage;
-  int_array_t swipe_keys[MAX_FINGERS][DIRECTIONS_COUNT];
-};
+  keys_array_t swipe_keys[MAX_FINGERS][DIRECTIONS_COUNT];
+} configuration_t;
 
-typedef struct configuration configuration_t;
 
 void clean_config(configuration_t *config);
 

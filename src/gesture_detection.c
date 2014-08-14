@@ -142,7 +142,14 @@ static void process_syn_event(struct input_event event,
     }
     if (direction != NONE) {
       printf("fingers: %d, direction: %d\n", *finger_count, direction);
-      printf("%d\n", config.swipe_keys[*finger_count][direction].length);
+      uint8_t i;
+      for (i = 0; i < MAX_KEYS_PER_GESTURE; i++) {
+        int key = config.swipe_keys[*finger_count][direction].keys[i];
+        if (key > 0) {
+          printf("%d ", key);
+        }
+      }
+      printf("\n");
       *finger_count = 0;
     }
   }
