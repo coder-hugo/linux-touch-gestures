@@ -22,16 +22,20 @@
  * THE SOFTWARE.
  */
 
-#ifndef INT_ARRAY_H_
-#define INT_ARRAY_H_
+#include <stdlib.h>
 
 #include "array.h"
 
-typedef struct int_array {
-  size_t length;
-  int data[1];
-} int_array_t;
-
-#define new_int_array(length) (int_array_t*) new_array(length, sizeof(int_array_t), sizeof(int))
-
-#endif // INT_ARRAY_H_
+void *new_array(size_t length, size_t struct_size, size_t type_size) {
+  void *array;
+  /* we're allocating the size of basic array struct 
+     (which already contains space for one type)
+     and additional space for length-1 type */
+  array = malloc(struct_size + type_size * (length - 1));
+  if(!array) {
+    return 0;
+  }
+  // the length is locatated at the beginning of the stuct
+  *(size_t*) array = length;
+  return array;
+}

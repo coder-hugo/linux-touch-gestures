@@ -22,16 +22,18 @@
  * THE SOFTWARE.
  */
 
-#ifndef INT_ARRAY_H_
-#define INT_ARRAY_H_
+#ifndef INPUT_EVENT_ARRAY_H_
+#define INPUT_EVENT_ARRAY_H_
+
+#include <linux/input.h>
 
 #include "array.h"
 
-typedef struct int_array {
+typedef struct input_event_array {
   size_t length;
-  int data[1];
-} int_array_t;
+  struct input_event data[1];
+} input_event_array_t;
 
-#define new_int_array(length) (int_array_t*) new_array(length, sizeof(int_array_t), sizeof(int))
+#define new_input_event_array(length) (input_event_array_t*) new_array(length, sizeof(input_event_array_t), sizeof(struct input_event))
 
-#endif // INT_ARRAY_H_
+#endif // INPUT_EVENT_ARRAY_H_

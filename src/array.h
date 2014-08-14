@@ -22,19 +22,11 @@
  * THE SOFTWARE.
  */
 
-#include <stdlib.h>
+#ifndef ARRAY_H_
+#define ARRAY_H_
 
-#include "int_array.h"
+#include <stddef.h>
 
-int_array_t *new_int_array(size_t length) {
-  int_array_t *array;
-  /* we're allocating the size of basic t_int_array 
-     (which already contains space for one int)
-     and additional space for length-1 ints */
-  array = malloc(sizeof(int_array_t) + sizeof(int) * (length - 1));
-  if(!array) {
-    return 0;
-  }
-  array->length = length;
-  return array;
-}
+void *new_array(size_t length, size_t struct_size, size_t type_size);
+
+#endif // ARRAY_H_
