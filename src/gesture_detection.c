@@ -26,10 +26,13 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <math.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include <linux/input.h>
 
 #include "gesture_detection.h"
+#include "input_event_array.h"
 
 typedef struct point {
   int x;
@@ -115,12 +118,13 @@ static void process_abs_event(struct input_event event,
   }
 }
 
-static void process_syn_event(struct input_event event,
-                              configuration_t config,
-                              gesture_start_t gesture_start,
-                              point_t slot_points[2],
-                              point_t thresholds,
-                              uint8_t *finger_count) {
+static input_event_array_t *process_syn_event(struct input_event event,
+                                              configuration_t config,
+                                              gesture_start_t gesture_start,
+                                              point_t slot_points[2],
+                                              point_t thresholds,
+                                              uint8_t *finger_count) {
+  input_event_array_t *result = NULL;
   if (*finger_count > 0 && event.code == SYN_REPORT) {
     direction_t direction = NONE;
 
@@ -141,18 +145,22 @@ static void process_syn_event(struct input_event event,
       }
     }
     if (direction != NONE) {
-      printf("fingers: %d, direction: %d\n", *finger_count, direction);
       uint8_t i;
-      for (i = 0; i < MAX_KEYS_PER_GESTURE; i++) {
-        int key = config.swipe_keys[*finger_count][direction].keys[i];
+      for (i = MAX_KEYS_PER_GESTURE; i > 0; i--) {
+        int key = config.swipe_keys[*finger_count][direction].keys[i - 1];
         if (key > 0) {
-          printf("%d ", key);
+          if (!result) {
+            result = new_input_event_array(i);
+          }
+          memset(&result->data[i - 1], 0, sizeof(struct input_event));
+          result->data[i - 1].type = EV_KEY;
+          result->data[i - 1].code = key;
         }
       }
-      printf("\n");
       *finger_count = 0;
     }
   }
+  return result ? result : new_input_event_array(0);
 }
 
 static int32_t get_axix_threshold(int fd, int axis, uint8_t percentage) {
@@ -201,8 +209,17 @@ void process_events(int fd, configuration_t config) {
         case EV_ABS:
           process_abs_event(ev[i], &mt_slots);
           break;
-        case EV_SYN:
-          process_syn_event(ev[i], config, gesture_start, mt_slots.points, thresholds, &finger_count);
+        case EV_SYN: {
+            input_event_array_t *input_events = process_syn_event(ev[i], config, gesture_start, mt_slots.points, thresholds, &finger_count);
+            int i;
+            for (i = 0; i < input_events->length; i++) {
+              printf("%s%d", i > 0 ? " + " : "", input_events->data[i].code);
+            }
+            if (input_events->length) {
+              printf("\n");
+            }
+            free(input_events);
+          }
           break;
       }
     }
