@@ -49,7 +49,6 @@ typedef struct gesture_start {
   uint32_t distance;
 } gesture_start_t;
 
-typedef enum direction { UP, DOWN, LEFT, RIGHT, NONE } direction_t;
 
 static int test_grab(int fd) {
   int rc;

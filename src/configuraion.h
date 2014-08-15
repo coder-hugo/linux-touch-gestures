@@ -47,6 +47,7 @@ typedef struct configuration {
   keys_array_t swipe_keys[MAX_FINGERS][DIRECTIONS_COUNT];
 } configuration_t;
 
+typedef enum direction { UP, DOWN, LEFT, RIGHT, NONE } direction_t;
 
 void clean_config(configuration_t *config);
 
