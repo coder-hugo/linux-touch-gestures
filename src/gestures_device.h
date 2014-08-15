@@ -26,9 +26,11 @@
 #define GESTURES_DEVICE_H_
 
 #include "int_array.h"
+#include "input_event_array.h"
 
-int init_uinput(int_array_t keys);
+int init_uinput(int_array_t *keys);
 int destroy_uinput(int fd);
 void send_key(int fd, int key);
+void send_events(int fd, input_event_array_t *input_events);
 
 #endif // GESTURES_DEVICE_H_

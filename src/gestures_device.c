@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdint.h>
 
 #include <linux/input.h>
 #include <linux/uinput.h>
@@ -34,7 +35,7 @@
 #include "common.h"
 #include "gestures_device.h"
 
-int init_uinput(int_array_t keys) {
+int init_uinput(int_array_t *keys) {
   int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
   if(fd < 0) {
       die("error: open");
@@ -51,8 +52,8 @@ int init_uinput(int_array_t keys) {
   ioctl(fd, UI_SET_KEYBIT, BTN_MIDDLE);
 
   int i;
-  for (i = 0; i < keys.length; i++) {
-    ioctl(fd, UI_SET_KEYBIT, keys.data[i]);
+  for (i = 0; i < keys->length; i++) {
+    ioctl(fd, UI_SET_KEYBIT, keys->data[i]);
   }
 
   struct uinput_user_dev uidev;
@@ -109,5 +110,37 @@ void send_key(int fd, int key) {
   }
   if (write(fd, &syn_ev, sizeof(struct input_event)) < 0) {
     die("error: write");
+  }
+}
+
+void send_events(int fd, input_event_array_t *input_events) {
+  struct input_event syn_ev;
+  uint8_t i;
+  if (input_events->length > 0) {
+    for (i = 0; i < input_events->length; i++) {
+      input_events->data[i].value = 1;
+      if (write(fd, &input_events->data[i], sizeof(struct input_event)) < 0) {
+        die("error: write");
+      }
+    }
+
+    memset(&syn_ev, 0, sizeof(struct input_event));
+    syn_ev.type = EV_SYN;
+    syn_ev.code = SYN_REPORT;
+    syn_ev.value = 0;
+    if (write(fd, &syn_ev, sizeof(struct input_event)) < 0) {
+      die("error: write");
+    }
+
+    for (i = 0; i < input_events->length; i++) {
+      input_events->data[i].value = 0;
+      if (write(fd, &input_events->data[i], sizeof(struct input_event)) < 0) {
+        die("error: write");
+      }
+    }
+
+    if (write(fd, &syn_ev, sizeof(struct input_event)) < 0) {
+      die("error: write");
+    }
   }
 }

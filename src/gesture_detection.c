@@ -32,7 +32,6 @@
 #include <linux/input.h>
 
 #include "gesture_detection.h"
-#include "input_event_array.h"
 
 typedef struct point {
   int x;
@@ -170,7 +169,7 @@ static int32_t get_axix_threshold(int fd, int axis, uint8_t percentage) {
   return (absinfo.maximum - absinfo.minimum) * percentage / 100;
 }
 
-void process_events(int fd, configuration_t config) {
+void process_events(int fd, configuration_t config, void (*callback)(input_event_array_t*)) {
   struct input_event ev[64];
   int i, rd;
   uint8_t finger_count;
@@ -210,13 +209,7 @@ void process_events(int fd, configuration_t config) {
           break;
         case EV_SYN: {
             input_event_array_t *input_events = process_syn_event(ev[i], config, gesture_start, mt_slots.points, thresholds, &finger_count);
-            int i;
-            for (i = 0; i < input_events->length; i++) {
-              printf("%s%d", i > 0 ? " + " : "", input_events->data[i].code);
-            }
-            if (input_events->length) {
-              printf("\n");
-            }
+            callback(input_events);
             free(input_events);
           }
           break;

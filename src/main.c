@@ -35,16 +35,20 @@
 #include "gestures_device.h"
 #include "gesture_detection.h"
 
+int uinput_fd;
+
+static void execute_events(input_event_array_t *input_events) {
+  send_events(uinput_fd, input_events);
+}
 
 int main(int argc, char *argv[]) {
-  int_array_t *keys = new_int_array(1);
-  keys->data[0] = KEY_D;
-  int uinput_fd = init_uinput(*keys);
+  int_array_t *keys = new_int_array(4);
+  keys->data[0] = KEY_LEFTCTRL;
+  keys->data[1] = KEY_LEFTALT;
+  keys->data[2] = KEY_UP;
+  keys->data[3] = KEY_DOWN;
+  uinput_fd = init_uinput(keys);
   free(keys);
-
-//  sleep(1);
-//  send_key(uinput_fd, KEY_D);
-  destroy_uinput(uinput_fd);
 
   if (argc > 1) {
     int fd = open(argv[1], O_RDONLY);
@@ -55,10 +59,15 @@ int main(int argc, char *argv[]) {
     clean_config(&config);
     config.horz_threshold_percentage = 15;
     config.vert_threshold_percentage = 15;
-    config.swipe_keys[3][0].keys[0] = KEY_D;
-    config.swipe_keys[3][0].keys[1] = KEY_A;
-    process_events(fd, config);
+    config.swipe_keys[3][UP].keys[0] = KEY_LEFTCTRL;
+    config.swipe_keys[3][UP].keys[1] = KEY_LEFTALT;
+    config.swipe_keys[3][UP].keys[2] = KEY_DOWN;
+    config.swipe_keys[3][DOWN].keys[0] = KEY_LEFTCTRL;
+    config.swipe_keys[3][DOWN].keys[1] = KEY_LEFTALT;
+    config.swipe_keys[3][DOWN].keys[2] = KEY_UP;
+    process_events(fd, config, &execute_events);
     close(fd);
   }
+  destroy_uinput(uinput_fd);
   return 0;
 }
