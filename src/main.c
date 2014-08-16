@@ -56,12 +56,6 @@ int main(int argc, char *argv[]) {
     if (fd < 0) {
       die("error: open");
     }
-    config.swipe_keys[3][UP].keys[0] = KEY_LEFTCTRL;
-    config.swipe_keys[3][UP].keys[1] = KEY_LEFTALT;
-    config.swipe_keys[3][UP].keys[2] = KEY_DOWN;
-    config.swipe_keys[3][DOWN].keys[0] = KEY_LEFTCTRL;
-    config.swipe_keys[3][DOWN].keys[1] = KEY_LEFTALT;
-    config.swipe_keys[3][DOWN].keys[2] = KEY_UP;
     process_events(fd, config, &execute_events);
     close(fd);
   }

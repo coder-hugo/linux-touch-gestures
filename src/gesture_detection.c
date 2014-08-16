@@ -145,7 +145,7 @@ static input_event_array_t *process_syn_event(struct input_event event,
     if (direction != NONE) {
       uint8_t i;
       for (i = MAX_KEYS_PER_GESTURE; i > 0; i--) {
-        int key = config.swipe_keys[*finger_count][direction].keys[i - 1];
+        int key = config.swipe_keys[FINGER_TO_INDEX(*finger_count)][direction].keys[i - 1];
         if (key > 0) {
           if (!result) {
             result = new_input_event_array(i);

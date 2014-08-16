@@ -28,6 +28,10 @@
 
 #include "configuraion.h"
 #include "common.h"
+#include "keys.h"
+
+
+char *directions[4] = { "up", "down", "left", "right" };
 
 static void clean_config(configuration_t *config) {
   int32_t i, j, k;
@@ -36,6 +40,27 @@ static void clean_config(configuration_t *config) {
       for (k = 0; k < MAX_KEYS_PER_GESTURE; k++) {
         config->swipe_keys[i][j].keys[k] = -1;
       }
+    }
+  }
+}
+
+static void fill_keys_array(int (*keys_array)[MAX_KEYS_PER_GESTURE], char *keys) {
+  if (keys) {
+    char *ptr = strtok(keys, "+");
+    uint8_t i = 0;
+    while (ptr) {
+      if (i >= MAX_KEYS_PER_GESTURE) {
+        fprintf(stderr, "error: for each gesture only %d keystrokes are allowed\n", MAX_KEYS_PER_GESTURE);
+        exit(EXIT_FAILURE);
+      }
+      int key_code = get_key_code(ptr);
+      if (key_code < 0) {
+        fprintf(stderr, "error: wrong key name '%s'\n", ptr);
+        exit(EXIT_FAILURE);
+      }
+      (*keys_array)[i] = key_code;
+      ptr = strtok(NULL, "+");
+      i++;
     }
   }
 }
@@ -55,8 +80,18 @@ configuration_t read_config(const char *filename) {
   }
   result.vert_scroll = iniparser_getboolean(ini, "scroll:vertical", false);
   result.horz_scroll = iniparser_getboolean(ini, "scroll:horizontal", false);
-  result.vert_threshold_percentage = iniparser_getint(ini, "thresholds:vertical", 15),
-  result.horz_threshold_percentage = iniparser_getint(ini, "thresholds:horizontal", 15),
+  result.vert_threshold_percentage = iniparser_getint(ini, "thresholds:vertical", 15);
+  result.horz_threshold_percentage = iniparser_getint(ini, "thresholds:horizontal", 15);
+
+  uint8_t i, j;
+  for (i = 0; i < MAX_FINGERS; i++) {
+    for (j = 0; j < DIRECTIONS_COUNT; j++) {
+      char ini_key[15];
+      sprintf(ini_key, "%d-fingers:%s", INDEX_TO_FINGER(i), directions[j]);
+      fill_keys_array(&result.swipe_keys[i][j].keys, iniparser_getstring(ini, ini_key, NULL));
+    }
+  }
+  
   iniparser_freedict(ini);
   return result;
 }

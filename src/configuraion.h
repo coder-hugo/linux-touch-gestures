@@ -52,4 +52,7 @@ typedef enum direction { UP, DOWN, LEFT, RIGHT, NONE } direction_t;
 
 configuration_t read_config(const char *filename);
 
+#define FINGER_TO_INDEX(finger) (finger - 1)
+#define INDEX_TO_FINGER(index) (index + 1)
+
 #endif // CONFIGURATION_H_
