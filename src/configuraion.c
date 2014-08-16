@@ -23,10 +23,12 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
+#include <iniparser.h>
 
 #include "configuraion.h"
 
-void clean_config(configuration_t *config) {
+static void clean_config(configuration_t *config) {
   int32_t i, j, k;
   for (i = 0; i < MAX_FINGERS; i++) {
     for (j = 0; j < DIRECTIONS_COUNT; j++) {
@@ -35,4 +37,25 @@ void clean_config(configuration_t *config) {
       }
     }
   }
+}
+
+configuration_t read_config(const char *filename) {
+  configuration_t result;
+  clean_config(&result);
+  dictionary *ini = iniparser_load(filename);
+  char *touch_device_path = iniparser_getstring(ini, "general:touchdevice", NULL);
+  if (touch_device_path) {
+    result.touch_device_path = malloc(strlen(touch_device_path) + 1);
+    if (result.touch_device_path) {
+      strcpy(result.touch_device_path, touch_device_path);
+    }
+  } else {
+    result.touch_device_path = NULL;
+  }
+  result.vert_scroll = iniparser_getboolean(ini, "scroll:vertical", false);
+  result.horz_scroll = iniparser_getboolean(ini, "scroll:horizontal", false);
+  result.vert_threshold_percentage = iniparser_getint(ini, "thresholds:vertical", 15),
+  result.horz_threshold_percentage = iniparser_getint(ini, "thresholds:horizontal", 15),
+  iniparser_freedict(ini);
+  return result;
 }

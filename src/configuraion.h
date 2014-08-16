@@ -40,6 +40,7 @@ typedef struct keys_array {
 } keys_array_t;
 
 typedef struct configuration {
+  char *touch_device_path;
   bool vert_scroll;
   bool horz_scroll;
   uint8_t vert_threshold_percentage;
@@ -49,6 +50,6 @@ typedef struct configuration {
 
 typedef enum direction { UP, DOWN, LEFT, RIGHT, NONE } direction_t;
 
-void clean_config(configuration_t *config);
+configuration_t read_config(const char *filename);
 
 #endif // CONFIGURATION_H_

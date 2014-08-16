@@ -10,7 +10,8 @@ AC_CONFIG_SRCDIR([src/main.c])
 AC_PROG_CC
 
 # Checks for libraries.
-AC_CHECK_LIB([m], [sqrt])
+AC_CHECK_LIB([m], [sqrt], [], [AC_MSG_ERROR([libm is required])])
+AC_CHECK_LIB([iniparser], [iniparser_load], [], [AC_MSG_ERROR([libiniparser from http://ndevilla.free.fr/iniparser/ is required])])
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h stddef.h stdint.h stdlib.h string.h unistd.h])

@@ -51,14 +51,11 @@ int main(int argc, char *argv[]) {
   free(keys);
 
   if (argc > 1) {
-    int fd = open(argv[1], O_RDONLY);
+    configuration_t config = read_config(argv[1]);
+    int fd = open(config.touch_device_path, O_RDONLY);
     if (fd < 0) {
       die("error: open");
     }
-    configuration_t config;
-    clean_config(&config);
-    config.horz_threshold_percentage = 15;
-    config.vert_threshold_percentage = 15;
     config.swipe_keys[3][UP].keys[0] = KEY_LEFTCTRL;
     config.swipe_keys[3][UP].keys[1] = KEY_LEFTALT;
     config.swipe_keys[3][UP].keys[2] = KEY_DOWN;
