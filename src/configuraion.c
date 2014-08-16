@@ -27,6 +27,7 @@
 #include <iniparser.h>
 
 #include "configuraion.h"
+#include "common.h"
 
 static void clean_config(configuration_t *config) {
   int32_t i, j, k;
@@ -45,12 +46,12 @@ configuration_t read_config(const char *filename) {
   dictionary *ini = iniparser_load(filename);
   char *touch_device_path = iniparser_getstring(ini, "general:touchdevice", NULL);
   if (touch_device_path) {
-    result.touch_device_path = malloc(strlen(touch_device_path) + 1);
-    if (result.touch_device_path) {
+    if (result.touch_device_path = malloc(strlen(touch_device_path) + 1)) {
       strcpy(result.touch_device_path, touch_device_path);
     }
   } else {
-    result.touch_device_path = NULL;
+    errno = EINVAL;
+    die("error: no touch device defined");
   }
   result.vert_scroll = iniparser_getboolean(ini, "scroll:vertical", false);
   result.horz_scroll = iniparser_getboolean(ini, "scroll:horizontal", false);
