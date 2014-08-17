@@ -50,6 +50,7 @@ typedef struct gesture_start {
 
 mt_slots_t mt_slots;
 gesture_start_t gesture_start;
+uint8_t finger_count;
 
 static int test_grab(int fd) {
   int rc;
@@ -60,7 +61,7 @@ static int test_grab(int fd) {
   return rc;
 }
 
-static void init_gesture(uint8_t finger_count) {
+static void init_gesture() {
   int32_t x_distance, y_distance;
   gesture_start.point.x = mt_slots.points[0].x;
   gesture_start.point.y = mt_slots.points[0].y;
@@ -130,10 +131,9 @@ static void set_key_event(struct input_event *key_event, int code, int value) {
 
 static input_event_array_t *process_syn_event(struct input_event event,
                                               configuration_t config,
-                                              point_t thresholds,
-                                              uint8_t *finger_count) {
+                                              point_t thresholds) {
   input_event_array_t *result = NULL;
-  if (*finger_count > 0 && event.code == SYN_REPORT) {
+  if (finger_count > 0 && event.code == SYN_REPORT) {
     direction_t direction = NONE;
 
     int32_t x_distance, y_distance;
@@ -155,7 +155,7 @@ static input_event_array_t *process_syn_event(struct input_event event,
     if (direction != NONE) {
       uint8_t i;
       for (i = MAX_KEYS_PER_GESTURE; i > 0; i--) {
-        int key = config.swipe_keys[FINGER_TO_INDEX(*finger_count)][direction].keys[i - 1];
+        int key = config.swipe_keys[FINGER_TO_INDEX(finger_count)][direction].keys[i - 1];
         if (key > 0) {
           if (!result) {
             // i is the number of keys to press
@@ -170,7 +170,7 @@ static input_event_array_t *process_syn_event(struct input_event event,
           set_key_event(&result->data[result->length / 2 + i - 1], key, 0);
         }
       }
-      *finger_count = 0;
+      finger_count = 0;
     }
   }
   return result ? result : new_input_event_array(0);
@@ -187,7 +187,6 @@ static int32_t get_axix_threshold(int fd, int axis, uint8_t percentage) {
 void process_events(int fd, configuration_t config, void (*callback)(input_event_array_t*)) {
   struct input_event ev[64];
   int i, rd;
-  uint8_t finger_count;
 
   point_t thresholds;
   thresholds.x = get_axix_threshold(fd, ABS_X, config.horz_threshold_percentage);
@@ -214,14 +213,14 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
         case EV_KEY:
           finger_count = process_key_event(ev[i]);
           if (finger_count > 0) {
-            init_gesture(finger_count);
+            init_gesture();
           }
           break;
         case EV_ABS:
           process_abs_event(ev[i]);
           break;
         case EV_SYN: {
-            input_event_array_t *input_events = process_syn_event(ev[i], config, thresholds, &finger_count);
+            input_event_array_t *input_events = process_syn_event(ev[i], config, thresholds);
             callback(input_events);
             free(input_events);
           }
