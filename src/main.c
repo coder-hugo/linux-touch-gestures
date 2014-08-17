@@ -35,30 +35,45 @@
 #include "gestures_device.h"
 #include "gesture_detection.h"
 
-int uinput_fd;
+int uinput_fd, touch_device_fd;
 
 static void execute_events(input_event_array_t *input_events) {
   send_events(uinput_fd, input_events);
 }
 
-int main(int argc, char *argv[]) {
-  int_array_t *keys = new_int_array(4);
-  keys->data[0] = KEY_LEFTCTRL;
-  keys->data[1] = KEY_LEFTALT;
-  keys->data[2] = KEY_UP;
-  keys->data[3] = KEY_DOWN;
-  uinput_fd = init_uinput(keys);
-  free(keys);
+static int_array_t *get_keys_array(configuration_t config) {
+  uint8_t i, j, k;
+  uint8_t keys_count = 0;
+  int_array_t *keys = new_int_array(MAX_FINGERS * DIRECTIONS_COUNT * MAX_KEYS_PER_GESTURE);
+  for (i = 0; i < MAX_FINGERS; i++) {
+    for (j = 0; j < DIRECTIONS_COUNT; j++) {
+      for (k = 0; k < MAX_KEYS_PER_GESTURE; k++) {
+        if (config.swipe_keys[i][j].keys[k] != -1) {
+          keys->data[keys_count] = config.swipe_keys[i][j].keys[k];
+          keys_count++;
+        }
+      }
+    }
+  }
+  keys->length = keys_count;
+  return keys;
+}
 
+int main(int argc, char *argv[]) {
   if (argc > 1) {
     configuration_t config = read_config(argv[1]);
-    int fd = open(config.touch_device_path, O_RDONLY);
-    if (fd < 0) {
+    int_array_t *keys = get_keys_array(config);
+    uinput_fd = init_uinput(keys);
+    free(keys);
+
+    touch_device_fd = open(config.touch_device_path, O_RDONLY);
+    if (touch_device_fd < 0) {
       die("error: open");
     }
-    process_events(fd, config, &execute_events);
-    close(fd);
+    process_events(touch_device_fd, config, &execute_events);
+
+    close(touch_device_fd);
+    destroy_uinput(uinput_fd);
   }
-  destroy_uinput(uinput_fd);
   return 0;
 }
