@@ -48,6 +48,8 @@ typedef struct gesture_start {
   uint32_t distance;
 } gesture_start_t;
 
+mt_slots_t mt_slots;
+gesture_start_t gesture_start;
 
 static int test_grab(int fd) {
   int rc;
@@ -58,17 +60,15 @@ static int test_grab(int fd) {
   return rc;
 }
 
-static void init_gesture(point_t slot_points[2],
-                         uint8_t finger_count,
-                         gesture_start_t *gesture_start) {
+static void init_gesture(uint8_t finger_count) {
   int32_t x_distance, y_distance;
-  gesture_start->point.x = slot_points[0].x;
-  gesture_start->point.y = slot_points[0].y;
+  gesture_start.point.x = mt_slots.points[0].x;
+  gesture_start.point.y = mt_slots.points[0].y;
 
   if (finger_count == 2) {
-    x_distance = slot_points[0].x - slot_points[1].x;
-    y_distance = slot_points[0].y - slot_points[1].y;
-    gesture_start->distance = (uint32_t) sqrt((x_distance * x_distance) + (y_distance * y_distance));
+    x_distance = mt_slots.points[0].x - mt_slots.points[1].x;
+    y_distance = mt_slots.points[0].y - mt_slots.points[1].y;
+    gesture_start.distance = (uint32_t) sqrt((x_distance * x_distance) + (y_distance * y_distance));
   }
 }
 
@@ -100,17 +100,16 @@ static uint8_t process_key_event(struct input_event event) {
   return finger_count;
 }
 
-static void process_abs_event(struct input_event event,
-                              mt_slots_t *mt_slots) {
+static void process_abs_event(struct input_event event) {
   if (event.code == ABS_MT_SLOT) {
-    mt_slots->active = event.value;
-  } else if (mt_slots->active < 2) {
+    mt_slots.active = event.value;
+  } else if (mt_slots.active < 2) {
     switch (event.code) {
       case ABS_MT_POSITION_X:
-        mt_slots->points[mt_slots->active].x = event.value;
+        mt_slots.points[mt_slots.active].x = event.value;
         break;
       case ABS_MT_POSITION_Y:
-        mt_slots->points[mt_slots->active].y = event.value;
+        mt_slots.points[mt_slots.active].y = event.value;
         break;
     }
   }
@@ -131,8 +130,6 @@ static void set_key_event(struct input_event *key_event, int code, int value) {
 
 static input_event_array_t *process_syn_event(struct input_event event,
                                               configuration_t config,
-                                              gesture_start_t gesture_start,
-                                              point_t slot_points[2],
                                               point_t thresholds,
                                               uint8_t *finger_count) {
   input_event_array_t *result = NULL;
@@ -140,8 +137,8 @@ static input_event_array_t *process_syn_event(struct input_event event,
     direction_t direction = NONE;
 
     int32_t x_distance, y_distance;
-    x_distance = gesture_start.point.x - slot_points[0].x;
-    y_distance = gesture_start.point.y - slot_points[0].y;
+    x_distance = gesture_start.point.x - mt_slots.points[0].x;
+    y_distance = gesture_start.point.y - mt_slots.points[0].y;
     if (fabs(x_distance) > fabs(y_distance)) {
       if (x_distance > thresholds.x) {
         direction = LEFT;
@@ -191,8 +188,6 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
   struct input_event ev[64];
   int i, rd;
   uint8_t finger_count;
-  gesture_start_t gesture_start;
-  mt_slots_t mt_slots;
 
   point_t thresholds;
   thresholds.x = get_axix_threshold(fd, ABS_X, config.horz_threshold_percentage);
@@ -219,14 +214,14 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
         case EV_KEY:
           finger_count = process_key_event(ev[i]);
           if (finger_count > 0) {
-            init_gesture(mt_slots.points, finger_count, &gesture_start);
+            init_gesture(finger_count);
           }
           break;
         case EV_ABS:
-          process_abs_event(ev[i], &mt_slots);
+          process_abs_event(ev[i]);
           break;
         case EV_SYN: {
-            input_event_array_t *input_events = process_syn_event(ev[i], config, gesture_start, mt_slots.points, thresholds, &finger_count);
+            input_event_array_t *input_events = process_syn_event(ev[i], config, thresholds, &finger_count);
             callback(input_events);
             free(input_events);
           }

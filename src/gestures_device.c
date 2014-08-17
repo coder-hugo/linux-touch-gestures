@@ -46,10 +46,7 @@ int init_uinput(int_array_t *keys) {
   ioctl(fd, UI_SET_EVBIT, EV_REL);
   
   ioctl(fd, UI_SET_RELBIT, REL_WHEEL);
-  
-  ioctl(fd, UI_SET_KEYBIT, BTN_LEFT);
-  ioctl(fd, UI_SET_KEYBIT, BTN_RIGHT);
-  ioctl(fd, UI_SET_KEYBIT, BTN_MIDDLE);
+  ioctl(fd, UI_SET_RELBIT, REL_HWHEEL);
 
   int i;
   for (i = 0; i < keys->length; i++) {
