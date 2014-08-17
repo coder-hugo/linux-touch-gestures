@@ -116,6 +116,19 @@ static void process_abs_event(struct input_event event,
   }
 }
 
+static void set_syn_event(struct input_event *syn_event) {
+  memset(syn_event, 0, sizeof(struct input_event));
+  syn_event->type = EV_SYN;
+  syn_event->code = SYN_REPORT;
+}
+
+static void set_key_event(struct input_event *key_event, int code, int value) {
+  memset(key_event, 0, sizeof(struct input_event));
+  key_event->type = EV_KEY;
+  key_event->code = code;
+  key_event->value = value;
+}
+
 static input_event_array_t *process_syn_event(struct input_event event,
                                               configuration_t config,
                                               gesture_start_t gesture_start,
@@ -148,11 +161,16 @@ static input_event_array_t *process_syn_event(struct input_event event,
         int key = config.swipe_keys[FINGER_TO_INDEX(*finger_count)][direction].keys[i - 1];
         if (key > 0) {
           if (!result) {
-            result = new_input_event_array(i);
+            // i is the number of keys to press
+            // therefore i input_events with value 1 + 1 EV_SYN event and i input_events with value 0 + EV_SYN event are needed
+            result = new_input_event_array((i + 1) * 2);
+            set_syn_event(&result->data[i]);
+            set_syn_event(&result->data[result->length - 1]);
           }
-          memset(&result->data[i - 1], 0, sizeof(struct input_event));
-          result->data[i - 1].type = EV_KEY;
-          result->data[i - 1].code = key;
+          // press event
+          set_key_event(&result->data[i - 1], key, 1);
+          // release event
+          set_key_event(&result->data[result->length / 2 + i - 1], key, 0);
         }
       }
       *finger_count = 0;

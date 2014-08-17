@@ -83,64 +83,13 @@ int destroy_uinput(int fd) {
   close(fd);
 }
 
-void send_key(int fd, int key) {
-  struct input_event key_ev, syn_ev;
-
-  memset(&key_ev, 0, sizeof(struct input_event));
-  key_ev.type = EV_KEY;
-  key_ev.code = key;
-  // press the key
-  key_ev.value = 1;
-  if (write(fd, &key_ev, sizeof(struct input_event)) < 0) {
-    die("error: write");
-  }
-
-  memset(&syn_ev, 0, sizeof(struct input_event));
-  syn_ev.type = EV_SYN;
-  syn_ev.code = 0;
-  syn_ev.value = 0;
-  if (write(fd, &syn_ev, sizeof(struct input_event)) < 0) {
-    die("error: write");
-  }
-
-  // release the key
-  key_ev.value = 0;
-  if (write(fd, &key_ev, sizeof(struct input_event)) < 0) {
-    die("error: write");
-  }
-  if (write(fd, &syn_ev, sizeof(struct input_event)) < 0) {
-    die("error: write");
-  }
-}
-
 void send_events(int fd, input_event_array_t *input_events) {
-  struct input_event syn_ev;
   uint8_t i;
   if (input_events->length > 0) {
     for (i = 0; i < input_events->length; i++) {
-      input_events->data[i].value = 1;
       if (write(fd, &input_events->data[i], sizeof(struct input_event)) < 0) {
         die("error: write");
       }
-    }
-
-    memset(&syn_ev, 0, sizeof(struct input_event));
-    syn_ev.type = EV_SYN;
-    syn_ev.code = SYN_REPORT;
-    syn_ev.value = 0;
-    if (write(fd, &syn_ev, sizeof(struct input_event)) < 0) {
-      die("error: write");
-    }
-
-    for (i = 0; i < input_events->length; i++) {
-      input_events->data[i].value = 0;
-      if (write(fd, &input_events->data[i], sizeof(struct input_event)) < 0) {
-        die("error: write");
-      }
-    }
-
-    if (write(fd, &syn_ev, sizeof(struct input_event)) < 0) {
-      die("error: write");
     }
   }
 }
