@@ -41,8 +41,12 @@ typedef struct keys_array {
 
 typedef struct configuration {
   char *touch_device_path;
-  bool vert_scroll;
-  bool horz_scroll;
+  struct scroll_options {
+    bool vert;
+    bool horz;
+    uint8_t vert_delta;
+    uint8_t horz_delta;
+  } scroll;
   uint8_t vert_threshold_percentage;
   uint8_t horz_threshold_percentage;
   keys_array_t swipe_keys[MAX_FINGERS][DIRECTIONS_COUNT];
