@@ -12,9 +12,10 @@ AC_PROG_CC
 # Checks for libraries.
 AC_CHECK_LIB([m], [sqrt], [], [AC_MSG_ERROR([libm is required])])
 AC_CHECK_LIB([iniparser], [iniparser_load], [], [AC_MSG_ERROR([libiniparser from http://ndevilla.free.fr/iniparser/ is required])])
+AC_CHECK_LIB(pthread, pthread_create, [], [AC_MSG_ERROR([pthread not found])])
 
 # Checks for header files.
-AC_CHECK_HEADERS([fcntl.h stddef.h stdint.h stdlib.h string.h unistd.h])
+AC_CHECK_HEADERS([fcntl.h stddef.h stdint.h stdlib.h string.h unistd.h pthread.h])
 AC_CHECK_HEADERS([linux/input.h linux/uinput.h], [], [AC_MSG_ERROR([The linux header files are required])])
 
 # Checks for typedefs, structures, and compiler characteristics.

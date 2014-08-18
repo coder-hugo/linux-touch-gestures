@@ -28,6 +28,8 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
+#include <pthread.h>
 
 #include <linux/input.h>
 
@@ -35,7 +37,7 @@
 
 // FIXME use 2 for SCROLL_FINGER_COUNT as soon as possible
 #define SCROLL_FINGER_COUNT 4
-
+#define SCROLL_SLOW_DOWN_FACTOR -0.01
 
 typedef struct point {
   int x;
@@ -53,7 +55,7 @@ typedef struct scroll {
   struct input_event last_y_abs_event;
   double x_velocity;
   double y_velocity;
-  int32_t width;
+  double width;
 } scroll_t;
 
 typedef struct gesture_start {
@@ -64,7 +66,7 @@ typedef struct gesture_start {
 mt_slots_t mt_slots;
 gesture_start_t gesture_start;
 uint8_t finger_count;
-scroll_t scroll;
+volatile scroll_t scroll;
 
 static int test_grab(int fd) {
   int rc;
@@ -80,12 +82,14 @@ static void init_gesture() {
   gesture_start.point.x = mt_slots.points[0].x;
   gesture_start.point.y = mt_slots.points[0].y;
 
-  if (finger_count == 2) {
+  if (finger_count == SCROLL_FINGER_COUNT) {
     x_distance = mt_slots.points[0].x - mt_slots.points[1].x;
     y_distance = mt_slots.points[0].y - mt_slots.points[1].y;
     gesture_start.distance = (uint32_t) sqrt((x_distance * x_distance) + (y_distance * y_distance));
     scroll.width = 0;
     scroll.last_point = mt_slots.points[0];
+    scroll.x_velocity = 0;
+    scroll.y_velocity = 0;
   }
 }
 
@@ -136,7 +140,7 @@ static void process_abs_event(struct input_event event) {
   } else if (mt_slots.active < 2) {
     switch (event.code) {
       case ABS_MT_POSITION_X:
-        if (mt_slots.active == 0) {
+        if (mt_slots.active == 0 && finger_count == SCROLL_FINGER_COUNT) {
           if (scroll.last_x_abs_event.type == EV_ABS && scroll.last_x_abs_event.code == ABS_MT_POSITION_X) {
             scroll.x_velocity = calcualte_velocity(event, scroll.last_x_abs_event);
           }
@@ -146,7 +150,7 @@ static void process_abs_event(struct input_event event) {
         mt_slots.points[mt_slots.active].x = event.value;
         break;
       case ABS_MT_POSITION_Y:
-        if (mt_slots.active == 0) {
+        if (mt_slots.active == 0 && finger_count == SCROLL_FINGER_COUNT) {
           if (scroll.last_y_abs_event.type == EV_ABS && scroll.last_y_abs_event.code == ABS_MT_POSITION_Y) {
             scroll.y_velocity = calcualte_velocity(scroll.last_y_abs_event, event);
           }
@@ -170,14 +174,15 @@ static void set_input_event(struct input_event *input_event, int type, int code,
 #define set_key_event(key_event, code, value) set_input_event(key_event, EV_KEY, code, value)
 #define set_rel_event(rel_event, code, value) set_input_event(rel_event, EV_REL, code, value)
 
-static input_event_array_t *do_scroll(int32_t distance, int32_t delta, int rel_code) {
+static input_event_array_t *do_scroll(double distance, int32_t delta, int rel_code) {
   input_event_array_t *result = NULL;
   scroll.width += distance;
   if (fabs(scroll.width) > delta) {
     result = new_input_event_array(2);
-    set_rel_event(&result->data[0], rel_code, scroll.width / delta);
+    int width = (int)(scroll.width / delta);
+    set_rel_event(&result->data[0], rel_code, width);
     set_syn_event(&result->data[1]);
-    scroll.width %= delta;
+    scroll.width -= width * delta;
   }
   return result;
 }
@@ -245,6 +250,38 @@ static int32_t get_axix_threshold(int fd, int axis, uint8_t percentage) {
   return (absinfo.maximum - absinfo.minimum) * percentage / 100;
 }
 
+typedef struct scroll_thread_params {
+  uint8_t delta;
+  int code;
+  void (*callback)(input_event_array_t*);
+} scroll_thread_params_t;
+
+static void *scroll_thread_function(void *val) {
+  while (scroll.y_velocity != 0) {
+    struct timespec tim = {
+      .tv_sec = 0,
+      .tv_nsec = 5000000
+    };
+    nanosleep(&tim, NULL);
+    scroll_thread_params_t *params = ((scroll_thread_params_t*)val);
+    input_event_array_t *events = do_scroll(scroll.y_velocity * 5, params->delta, REL_WHEEL);
+    if (events) {
+      params->callback(events);
+    }
+    free(events);
+    double new_velocity = SCROLL_SLOW_DOWN_FACTOR * 5 + fabs(scroll.y_velocity);
+    if (new_velocity < 0) {
+      new_velocity = 0;
+    }
+    if (scroll.y_velocity > 0) {
+      scroll.y_velocity = new_velocity;
+    } else {
+      scroll.y_velocity = -new_velocity;
+    }
+  }
+  return NULL;
+}
+
 void process_events(int fd, configuration_t config, void (*callback)(input_event_array_t*)) {
   struct input_event ev[64];
   int i, rd;
@@ -252,6 +289,8 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
   point_t thresholds;
   thresholds.x = get_axix_threshold(fd, ABS_X, config.horz_threshold_percentage);
   thresholds.y = get_axix_threshold(fd, ABS_Y, config.vert_threshold_percentage);
+
+  pthread_t thread = NULL;
 
   if (thresholds.x < 0 || thresholds.y < 0) {
     return;
@@ -275,6 +314,16 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
           finger_count = process_key_event(ev[i]);
           if (finger_count > 0) {
             init_gesture();
+          } else if (scroll.x_velocity != 0 || scroll.y_velocity != 0) {
+            if (thread) {
+              pthread_cancel(thread);
+            }
+            scroll_thread_params_t params = {
+              .delta = config.scroll.vert_delta,
+              .callback = callback
+            };
+            pthread_create(&thread, NULL, &scroll_thread_function, (void*) &params);
+            
           }
           break;
         case EV_ABS:
