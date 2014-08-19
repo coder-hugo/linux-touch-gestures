@@ -37,7 +37,7 @@
 
 // FIXME use 2 for SCROLL_FINGER_COUNT as soon as possible
 #define SCROLL_FINGER_COUNT 4
-#define SCROLL_SLOW_DOWN_FACTOR -0.01
+#define SCROLL_SLOW_DOWN_FACTOR -0.006
 
 typedef struct point {
   int x;
@@ -62,6 +62,12 @@ typedef struct gesture_start {
   point_t point;
   uint32_t distance;
 } gesture_start_t;
+
+typedef struct scroll_thread_params {
+  uint8_t delta;
+  int code;
+  void (*callback)(input_event_array_t*);
+} scroll_thread_params_t;
 
 mt_slots_t mt_slots;
 gesture_start_t gesture_start;
@@ -136,27 +142,38 @@ static double calcualte_velocity(struct input_event event1, struct input_event e
 
 static void process_abs_event(struct input_event event) {
   if (event.code == ABS_MT_SLOT) {
+    // store the current mt_slot
     mt_slots.active = event.value;
   } else if (mt_slots.active < 2) {
     switch (event.code) {
       case ABS_MT_POSITION_X:
+        // if finger count matches SCROLL_FINGER_COUNT and the ABS_MT_POSITION_X is for the first finger
+        // the scroll data need to be updated
         if (mt_slots.active == 0 && finger_count == SCROLL_FINGER_COUNT) {
+          // check wether a correct input event was set to scroll.last_x_abs_event
           if (scroll.last_x_abs_event.type == EV_ABS && scroll.last_x_abs_event.code == ABS_MT_POSITION_X) {
-            scroll.x_velocity = calcualte_velocity(event, scroll.last_x_abs_event);
+            // invert the velocity to scroll to the correct direction as a positive x direction
+            // on the touchpad mean scroll left (negative scroll direction)
+            scroll.x_velocity = -calcualte_velocity(scroll.last_x_abs_event, event);
           }
           scroll.last_x_abs_event = event;
           scroll.last_point.x = mt_slots.points[0].x;
         }
+        // store the current x position for the current mt_slot
         mt_slots.points[mt_slots.active].x = event.value;
         break;
       case ABS_MT_POSITION_Y:
+        // if finger count matches SCROLL_FINGER_COUNT and the ABS_MT_POSITION_Y is for the first finger
+        // the scroll data need to be updated
         if (mt_slots.active == 0 && finger_count == SCROLL_FINGER_COUNT) {
+          // check wether a correct input event was set to scroll.last_y_abs_event
           if (scroll.last_y_abs_event.type == EV_ABS && scroll.last_y_abs_event.code == ABS_MT_POSITION_Y) {
             scroll.y_velocity = calcualte_velocity(scroll.last_y_abs_event, event);
           }
           scroll.last_y_abs_event = event;
           scroll.last_point.y = mt_slots.points[0].y;
         }
+        // store the current y position for the current mt_slot
         mt_slots.points[mt_slots.active].y = event.value;
         break;
     }
@@ -176,7 +193,10 @@ static void set_input_event(struct input_event *input_event, int type, int code,
 
 static input_event_array_t *do_scroll(double distance, int32_t delta, int rel_code) {
   input_event_array_t *result = NULL;
+  // increment the scroll width by the current moved distance
   scroll.width += distance;
+  // a scroll width of delta means scroll one "scroll-unit" therefore a scroll event
+  // can be first triggered if the absolute value of scroll.width exeeded delta
   if (fabs(scroll.width) > delta) {
     result = new_input_event_array(2);
     int width = (int)(scroll.width / delta);
@@ -198,6 +218,8 @@ static input_event_array_t *process_syn_event(struct input_event event,
     x_distance = gesture_start.point.x - mt_slots.points[0].x;
     y_distance = gesture_start.point.y - mt_slots.points[0].y;
     if (fabs(x_distance) > fabs(y_distance)) {
+      // only check for the finger_count LEFT and RIGHT gestures if horizontal scrolling is
+      // disabled and the the finger_count doesn't match SCROLL_FINGER_COUNT
       if (!(config.scroll.horz && finger_count == SCROLL_FINGER_COUNT)) {
         if (x_distance > thresholds.x) {
           direction = LEFT;
@@ -208,6 +230,8 @@ static input_event_array_t *process_syn_event(struct input_event event,
         result = do_scroll(scroll.last_point.x - mt_slots.points[0].x, config.scroll.horz_delta, REL_HWHEEL);
       }
     } else {
+      // only check for the finger_count UP and DOWN gestures if horizontal scrolling is
+      // disabled and the the finger_count doesn't match SCROLL_FINGER_COUNT
       if (!(config.scroll.vert && finger_count == SCROLL_FINGER_COUNT)) {
         if (y_distance > thresholds.y) {
           direction = UP;
@@ -250,34 +274,35 @@ static int32_t get_axix_threshold(int fd, int axis, uint8_t percentage) {
   return (absinfo.maximum - absinfo.minimum) * percentage / 100;
 }
 
-typedef struct scroll_thread_params {
-  uint8_t delta;
-  int code;
-  void (*callback)(input_event_array_t*);
-} scroll_thread_params_t;
+#define slowdown_scroll(velocity, thread_params) \
+  while (velocity != 0) { \
+    struct timespec tim = { \
+      .tv_sec = 0, \
+      .tv_nsec = 5000000 \
+    };\
+    nanosleep(&tim, NULL); \
+    input_event_array_t *events = do_scroll(velocity * 5, thread_params->delta, thread_params->code); \
+    if (events) { \
+      thread_params->callback(events); \
+    } \
+    free(events); \
+    double new_velocity = SCROLL_SLOW_DOWN_FACTOR * 5 + fabs(velocity); \
+    if (new_velocity < 0) { \
+      new_velocity = 0; \
+    } \
+    if (velocity > 0) { \
+      velocity = new_velocity; \
+    } else { \
+      velocity = -new_velocity; \
+    } \
+  }
 
 static void *scroll_thread_function(void *val) {
-  while (scroll.y_velocity != 0) {
-    struct timespec tim = {
-      .tv_sec = 0,
-      .tv_nsec = 5000000
-    };
-    nanosleep(&tim, NULL);
-    scroll_thread_params_t *params = ((scroll_thread_params_t*)val);
-    input_event_array_t *events = do_scroll(scroll.y_velocity * 5, params->delta, REL_WHEEL);
-    if (events) {
-      params->callback(events);
-    }
-    free(events);
-    double new_velocity = SCROLL_SLOW_DOWN_FACTOR * 5 + fabs(scroll.y_velocity);
-    if (new_velocity < 0) {
-      new_velocity = 0;
-    }
-    if (scroll.y_velocity > 0) {
-      scroll.y_velocity = new_velocity;
-    } else {
-      scroll.y_velocity = -new_velocity;
-    }
+  scroll_thread_params_t *params = ((scroll_thread_params_t*)val);
+  if (params->code == REL_WHEEL) {
+    slowdown_scroll(scroll.y_velocity, params);
+  } else if (params->code == REL_HWHEEL) {
+    slowdown_scroll(scroll.x_velocity, params);
   }
   return NULL;
 }
@@ -290,7 +315,7 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
   thresholds.x = get_axix_threshold(fd, ABS_X, config.horz_threshold_percentage);
   thresholds.y = get_axix_threshold(fd, ABS_Y, config.vert_threshold_percentage);
 
-  pthread_t thread = NULL;
+  pthread_t scroll_thread = NULL;
 
   if (thresholds.x < 0 || thresholds.y < 0) {
     return;
@@ -313,17 +338,24 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
         case EV_KEY:
           finger_count = process_key_event(ev[i]);
           if (finger_count > 0) {
+            if (scroll_thread) {
+              pthread_cancel(scroll_thread);
+            }
             init_gesture();
           } else if (scroll.x_velocity != 0 || scroll.y_velocity != 0) {
-            if (thread) {
-              pthread_cancel(thread);
-            }
             scroll_thread_params_t params = {
-              .delta = config.scroll.vert_delta,
               .callback = callback
             };
-            pthread_create(&thread, NULL, &scroll_thread_function, (void*) &params);
-            
+            if (fabs(scroll.x_velocity * config.scroll.horz_delta) > fabs(scroll.y_velocity * config.scroll.vert_delta)) {
+              params.delta = config.scroll.horz_delta;
+              params.code = REL_HWHEEL;
+              scroll.y_velocity = 0;
+            } else {
+              params.delta = config.scroll.vert_delta;
+              params.code = REL_WHEEL;
+              scroll.x_velocity = 0;
+            }
+            pthread_create(&scroll_thread, NULL, &scroll_thread_function, (void*) &params);
           }
           break;
         case EV_ABS:
