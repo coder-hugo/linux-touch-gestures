@@ -239,71 +239,70 @@ static input_event_array_t *process_syn_event(struct input_event event,
   input_event_array_t *result = NULL;
   if (finger_count > 0 && event.code == SYN_REPORT) {
     direction_t direction = NONE;
-
-    int32_t x_distance, y_distance;
-    x_distance = gesture_start.point.x - mt_slots.points[0].x;
-    y_distance = gesture_start.point.y - mt_slots.points[0].y;
-    if (fabs(x_distance) > fabs(y_distance)) {
-      if (current_gesture == NO_GESTURE) {
-        point_t v1 = create_direction_vector(mt_slots.last_points[0], mt_slots.points[0]);
-        point_t v2 = create_direction_vector(mt_slots.last_points[1], mt_slots.points[1]);
-        // if horizontal scrolling is enable, the finger_count matches SCROLL_FINGER_COUNT and 
-        // the x direction of the direction vectors for both fingers is equal the current_gesture
-        // will be SCROLL
-        if (config.scroll.horz && finger_count == SCROLL_FINGER_COUNT && v1.x != 0 && v1.x == v2.x) {
-          current_gesture = SCROLL;
-        // if zooming is enable, the finger_count matches SCROLL_FINGER_COUNT and the direction
-        // vectors for both fingers are opposed to each other the current_gesture will be ZOOM
-        } else if (config.zoom.enabled && finger_count == SCROLL_FINGER_COUNT && (v1.x != v2.x || v1.y != v2.y)) {
-          current_gesture = ZOOM;
-        // if no scrolling and zooming is enabled or the finger_count does not match
-        // SCROLL_FINGER_COUNT the current_gesture will be SWIPE
-        } else if ((!config.scroll.horz && !config.zoom.enabled) || finger_count != SCROLL_FINGER_COUNT) {
-          current_gesture = SWIPE;
-        }
+    point_t v1;
+    point_t v2;
+    if (current_gesture == NO_GESTURE) {
+      v1 = create_direction_vector(mt_slots.last_points[0], mt_slots.points[0]);
+      v2 = create_direction_vector(mt_slots.last_points[1], mt_slots.points[1]);
+      // if zooming is enable, the finger_count matches SCROLL_FINGER_COUNT and the direction
+      // vectors for both fingers are opposed to each other the current_gesture will be ZOOM
+      if (config.zoom.enabled && finger_count == SCROLL_FINGER_COUNT && (v1.x != v2.x || v1.y != v2.y)) {
+        current_gesture = ZOOM;
       }
+    }
 
-      if (current_gesture == SWIPE) {
-        if (x_distance > thresholds.x) {
-          direction = LEFT;
-        } else if (x_distance < -thresholds.x) {
-          direction = RIGHT;
-        }
-      } else if (current_gesture == SCROLL) {
-          result = do_scroll(scroll.last_point.x - mt_slots.points[0].x, config.scroll.horz_delta, REL_HWHEEL);
-      } else if (current_gesture == ZOOM) {
-        printf("zoom\n");
-      }
+    if (current_gesture == ZOOM) {
+      printf("zoom\n");
     } else {
-      if (current_gesture == NO_GESTURE) {
-        point_t v1 = create_direction_vector(mt_slots.last_points[0], mt_slots.points[0]);
-        point_t v2 = create_direction_vector(mt_slots.last_points[1], mt_slots.points[1]);
-        // if vertical scrolling is enable, the finger_count matches SCROLL_FINGER_COUNT and 
-        // the y direction of the direction vectors for both fingers is equal the current_gesture
-        // will be SCROLL
-        if (config.scroll.vert && finger_count == SCROLL_FINGER_COUNT && v1.y != 0 && v1.y == v2.y) {
-          current_gesture = SCROLL;
-        // if zooming is enable, the finger_count matches SCROLL_FINGER_COUNT and the direction
-        // vectors for both fingers are opposed to each other the current_gesture will be ZOOM
-        } else if (config.zoom.enabled && finger_count == SCROLL_FINGER_COUNT && (v1.x != v2.x || v1.y != v2.y)) {
-          current_gesture = ZOOM;
-        // if no scrolling and zooming is enabled or the finger_count does not match
-        // SCROLL_FINGER_COUNT the current_gesture will be SWIPE
-        } else if ((!config.scroll.vert && !config.zoom.enabled) || finger_count != SCROLL_FINGER_COUNT) {
-          current_gesture = SWIPE;
+      int32_t x_distance, y_distance;
+      x_distance = gesture_start.point.x - mt_slots.points[0].x;
+      y_distance = gesture_start.point.y - mt_slots.points[0].y;
+      if (fabs(x_distance) > fabs(y_distance)) {
+        if (current_gesture == NO_GESTURE) {
+          // if horizontal scrolling is enable, the finger_count matches SCROLL_FINGER_COUNT and 
+          // the x direction of the direction vectors for both fingers is equal the current_gesture
+          // will be SCROLL
+          if (config.scroll.horz && finger_count == SCROLL_FINGER_COUNT && v1.x != 0 && v1.x == v2.x) {
+            current_gesture = SCROLL;
+          // if no scrolling and zooming is enabled or the finger_count does not match
+          // SCROLL_FINGER_COUNT the current_gesture will be SWIPE
+          } else if ((!config.scroll.horz && !config.zoom.enabled) || finger_count != SCROLL_FINGER_COUNT) {
+            current_gesture = SWIPE;
+          }
         }
-      }
 
-      if (current_gesture == SWIPE) {
-        if (y_distance > thresholds.y) {
-          direction = UP;
-        } else if (y_distance < -thresholds.y) {
-          direction = DOWN;
+        if (current_gesture == SWIPE) {
+          if (x_distance > thresholds.x) {
+            direction = LEFT;
+          } else if (x_distance < -thresholds.x) {
+            direction = RIGHT;
+          }
+        } else if (current_gesture == SCROLL) {
+          result = do_scroll(scroll.last_point.x - mt_slots.points[0].x, config.scroll.horz_delta, REL_HWHEEL);
         }
-      } else if (current_gesture == SCROLL) {
-        result = do_scroll(mt_slots.points[0].y - scroll.last_point.y, config.scroll.vert_delta, REL_WHEEL);
-      } else if (current_gesture == ZOOM) {
-        printf("zoom\n");
+      } else {
+        if (current_gesture == NO_GESTURE) {
+          // if vertical scrolling is enable, the finger_count matches SCROLL_FINGER_COUNT and 
+          // the y direction of the direction vectors for both fingers is equal the current_gesture
+          // will be SCROLL
+          if (config.scroll.vert && finger_count == SCROLL_FINGER_COUNT && v1.y != 0 && v1.y == v2.y) {
+            current_gesture = SCROLL;
+          // if no scrolling and zooming is enabled or the finger_count does not match
+          // SCROLL_FINGER_COUNT the current_gesture will be SWIPE
+          } else if ((!config.scroll.vert && !config.zoom.enabled) || finger_count != SCROLL_FINGER_COUNT) {
+            current_gesture = SWIPE;
+          }
+        }
+
+        if (current_gesture == SWIPE) {
+          if (y_distance > thresholds.y) {
+            direction = UP;
+          } else if (y_distance < -thresholds.y) {
+            direction = DOWN;
+          }
+        } else if (current_gesture == SCROLL) {
+          result = do_scroll(mt_slots.points[0].y - scroll.last_point.y, config.scroll.vert_delta, REL_WHEEL);
+        }
       }
     }
     if (direction != NONE) {
