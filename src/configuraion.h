@@ -47,6 +47,9 @@ typedef struct configuration {
     uint8_t vert_delta;
     uint8_t horz_delta;
   } scroll;
+  struct zoom_options {
+    bool enabled;
+  } zoom;
   uint8_t vert_threshold_percentage;
   uint8_t horz_threshold_percentage;
   keys_array_t swipe_keys[MAX_FINGERS][DIRECTIONS_COUNT];
