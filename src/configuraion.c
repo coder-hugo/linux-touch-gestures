@@ -80,8 +80,8 @@ configuration_t read_config(const char *filename) {
   }
   result.scroll.vert = iniparser_getboolean(ini, "scroll:vertical", false);
   result.scroll.horz = iniparser_getboolean(ini, "scroll:horizontal", false);
-  result.scroll.vert_delta = (uint8_t) iniparser_getint(ini, "scroll:verticaldelta", 79);
-  result.scroll.horz_delta = (uint8_t) iniparser_getint(ini, "scroll:horizontaldelta", 30);
+  result.scroll.vert_delta = (int8_t) iniparser_getint(ini, "scroll:verticaldelta", 79);
+  result.scroll.horz_delta = (int8_t) iniparser_getint(ini, "scroll:horizontaldelta", 30);
   result.vert_threshold_percentage = iniparser_getint(ini, "thresholds:vertical", 15);
   result.horz_threshold_percentage = iniparser_getint(ini, "thresholds:horizontal", 15);
   result.zoom.enabled = iniparser_getboolean(ini, "zoom:enabled", false);

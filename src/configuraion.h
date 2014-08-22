@@ -44,8 +44,8 @@ typedef struct configuration {
   struct scroll_options {
     bool vert;
     bool horz;
-    uint8_t vert_delta;
-    uint8_t horz_delta;
+    int8_t vert_delta;
+    int8_t horz_delta;
   } scroll;
   struct zoom_options {
     bool enabled;

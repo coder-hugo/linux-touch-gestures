@@ -206,7 +206,7 @@ static input_event_array_t *do_scroll(double distance, int32_t delta, int rel_co
   scroll.width += distance;
   // a scroll width of delta means scroll one "scroll-unit" therefore a scroll event
   // can be first triggered if the absolute value of scroll.width exeeded delta
-  if (fabs(scroll.width) > delta) {
+  if (fabs(scroll.width) > fabs(delta)) {
     result = new_input_event_array(2);
     int width = (int)(scroll.width / delta);
     set_rel_event(&result->data[0], rel_code, width);
