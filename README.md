@@ -10,6 +10,7 @@ implement the following events:
 * ABS\_MT\_POSITION\_Y
 * ABS\_MT\_SLOT
 * BTN\_TOOL\_\*
+
 For generating the keystrokes linux-touch-gestures uses the userspace input module. So you need either to load the
 module uinput or compile it to the kernel for using linux-touch-gestures.
 
