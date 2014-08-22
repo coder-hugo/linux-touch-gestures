@@ -85,6 +85,7 @@ configuration_t read_config(const char *filename) {
   result.vert_threshold_percentage = iniparser_getint(ini, "thresholds:vertical", 15);
   result.horz_threshold_percentage = iniparser_getint(ini, "thresholds:horizontal", 15);
   result.zoom.enabled = iniparser_getboolean(ini, "zoom:enabled", false);
+  result.zoom.delta = (uint8_t) iniparser_getint(ini, "zoom:delta", 200);
 
   uint8_t i, j;
   for (i = 0; i < MAX_FINGERS; i++) {

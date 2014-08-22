@@ -49,6 +49,7 @@ typedef struct configuration {
   } scroll;
   struct zoom_options {
     bool enabled;
+    uint8_t delta;
   } zoom;
   uint8_t vert_threshold_percentage;
   uint8_t horz_threshold_percentage;

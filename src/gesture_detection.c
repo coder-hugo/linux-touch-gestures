@@ -304,8 +304,7 @@ static input_event_array_t *process_syn_event(struct input_event event,
 
     if (current_gesture == ZOOM) {
       double finger_distance = calculate_distance(mt_slots.points[0], mt_slots.points[1]);
-      // TODO make zoom delta configurable
-      result = do_zoom(finger_distance - last_zoom_distance, 200);
+      result = do_zoom(finger_distance - last_zoom_distance, config.zoom.delta);
       last_zoom_distance = finger_distance;
     } else {
       int32_t x_distance, y_distance;
