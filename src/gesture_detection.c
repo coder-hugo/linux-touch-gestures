@@ -221,7 +221,6 @@ static input_event_array_t *do_zoom(double distance, int32_t delta) {
   input_event_array_t *tmp = do_scroll(distance, delta, REL_WHEEL);
   if (tmp) {
     result = new_input_event_array(6);
-    memset(&result->data[0], 0, sizeof(struct input_event));
     // press CTRL
     set_key_event(&result->data[0], KEY_LEFTCTRL, 1);
     set_syn_event(&result->data[1]);
