@@ -90,7 +90,7 @@ configuration_t read_config(const char *filename) {
   uint8_t i, j;
   for (i = 0; i < MAX_FINGERS; i++) {
     for (j = 0; j < DIRECTIONS_COUNT; j++) {
-      char ini_key[15];
+      char ini_key[16];
       sprintf(ini_key, "%d-fingers:%s", INDEX_TO_FINGER(i), directions[j]);
       fill_keys_array(&result.swipe_keys[i][j].keys, iniparser_getstring(ini, ini_key, NULL));
     }
