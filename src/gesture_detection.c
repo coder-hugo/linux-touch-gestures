@@ -104,18 +104,18 @@ static void reset_point(point_t *p) {
 }
 
 static void init_gesture() {
-  gesture_start.point = mt_slots.points[0];
+  reset_point(&gesture_start.point);
   current_gesture = NO_GESTURE;
+  reset_point(&mt_slots.points[0]);
+  reset_point(&mt_slots.points[1]);
+  reset_point(&mt_slots.last_points[0]);
+  reset_point(&mt_slots.last_points[1]);
 
   if (finger_count == SCROLL_FINGER_COUNT) {
     last_zoom_distance = -1;
     scroll.width = 0;
     scroll.x_velocity = 0;
     scroll.y_velocity = 0;
-    reset_point(&mt_slots.points[0]);
-    reset_point(&mt_slots.points[1]);
-    reset_point(&mt_slots.last_points[0]);
-    reset_point(&mt_slots.last_points[1]);
   }
 }
 
@@ -325,6 +325,8 @@ static input_event_array_t *process_syn_event(struct input_event event,
   if (finger_count > 0 && event.code == SYN_REPORT) {
     if (!check_mt_slots()) {
       return new_input_event_array(0);
+    } else if (!is_valid_point(gesture_start.point)) {
+      gesture_start.point = mt_slots.points[0];
     }
 
     direction_t direction = NONE;
