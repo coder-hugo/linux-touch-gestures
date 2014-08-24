@@ -40,6 +40,7 @@
 
 #define PI 3.14159265358979323846264338327
 #define PI_1_2 PI / 2
+#define PI_3_2 3 * PI / 2
 
 
 typedef struct point {
@@ -97,15 +98,24 @@ static double calculate_distance(point_t p1, point_t p2) {
   return sqrt((x_distance * x_distance) + (y_distance * y_distance));
 }
 
+static void reset_point(point_t *p) {
+  p->x = -1;
+  p->y = -1;
+}
+
 static void init_gesture() {
   gesture_start.point = mt_slots.points[0];
   current_gesture = NO_GESTURE;
 
   if (finger_count == SCROLL_FINGER_COUNT) {
-    last_zoom_distance = calculate_distance(mt_slots.points[0], mt_slots.points[1]);
+    last_zoom_distance = -1;
     scroll.width = 0;
     scroll.x_velocity = 0;
     scroll.y_velocity = 0;
+    reset_point(&mt_slots.points[0]);
+    reset_point(&mt_slots.points[1]);
+    reset_point(&mt_slots.last_points[0]);
+    reset_point(&mt_slots.last_points[1]);
   }
 }
 
@@ -259,7 +269,8 @@ static point_t create_vector(point_t p1, point_t p2) {
   /* if scrolling is enable, the finger_count matches SCROLL_FINGER_COUNT and\
      the direction of the direction vectors for both fingers is equal the current_gesture\
      will be SCROLL*/\
-  if (scroll_enabled && finger_count == SCROLL_FINGER_COUNT && vector_direction_difference < PI_1_2) { \
+  if (scroll_enabled && finger_count == SCROLL_FINGER_COUNT && \
+      (vector_direction_difference < PI_1_2 || vector_direction_difference > PI_3_2)) { \
     current_gesture = SCROLL; \
   /* if no scrolling and zooming is enabled or the finger_count does not match\
      SCROLL_FINGER_COUNT the current_gesture will be SWIPE*/\
@@ -295,11 +306,27 @@ static double get_vector_direction(point_t v) {
   }
 }
 
+static bool is_valid_point(point_t p) {
+  return p.x > -1 && p.y > -1;
+}
+
+static bool check_mt_slots() {
+  bool result = is_valid_point(mt_slots.last_points[0]) && is_valid_point(mt_slots.points[0]);
+  if (result && finger_count > 1) {
+    result = is_valid_point(mt_slots.last_points[1]) && is_valid_point(mt_slots.points[1]);
+  }
+  return result;
+}
+
 static input_event_array_t *process_syn_event(struct input_event event,
                                               configuration_t config,
                                               point_t thresholds) {
   input_event_array_t *result = NULL;
   if (finger_count > 0 && event.code == SYN_REPORT) {
+    if (!check_mt_slots()) {
+      return new_input_event_array(0);
+    }
+
     direction_t direction = NONE;
     double vector_direction_difference;
     if (current_gesture == NO_GESTURE) {
@@ -308,14 +335,17 @@ static input_event_array_t *process_syn_event(struct input_event event,
       vector_direction_difference =  fabs(v1_direction - v2_direction);
       // if zooming is enable, the finger_count matches SCROLL_FINGER_COUNT and the direction
       // vectors for both fingers are opposed to each other the current_gesture will be ZOOM
-      if (config.zoom.enabled && finger_count == SCROLL_FINGER_COUNT && vector_direction_difference > PI_1_2) {
+      if (config.zoom.enabled && finger_count == SCROLL_FINGER_COUNT && 
+          vector_direction_difference > PI_1_2 && vector_direction_difference < PI_3_2) {
         current_gesture = ZOOM;
       }
     }
 
     if (current_gesture == ZOOM) {
       double finger_distance = calculate_distance(mt_slots.points[0], mt_slots.points[1]);
-      result = do_zoom(finger_distance - last_zoom_distance, config.zoom.delta);
+      if (last_zoom_distance > -1) {
+        result = do_zoom(finger_distance - last_zoom_distance, config.zoom.delta);
+      }
       last_zoom_distance = finger_distance;
     } else {
       int32_t x_distance, y_distance;
@@ -426,8 +456,6 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
 
   pthread_t scroll_thread = NULL;
 
-  uint8_t syn_event_skip_counter = 0;
-
   if (thresholds.x < 0 || thresholds.y < 0) {
     return;
   }
@@ -453,7 +481,6 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
               pthread_cancel(scroll_thread);
             }
             init_gesture();
-            syn_event_skip_counter = 0;
           } else if (current_gesture == SCROLL && (scroll.x_velocity != 0 || scroll.y_velocity != 0)) {
             scroll_thread_params_t params = {
               .callback = callback
@@ -473,12 +500,7 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
         case EV_ABS:
           process_abs_event(ev[i]);
           break;
-        case EV_SYN: 
-          // skip the first 3 EV_SYN events to get enough data for mt_slots.last_points and .points
-          // to calculate the direction vectors correctly
-          if (syn_event_skip_counter < 3) {
-            syn_event_skip_counter++;
-          } else {
+        case EV_SYN: {
             input_event_array_t *input_events = process_syn_event(ev[i], config, thresholds);
             callback(input_events);
             free(input_events);
