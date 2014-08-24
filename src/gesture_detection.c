@@ -79,6 +79,7 @@ uint8_t finger_count;
 volatile scroll_t scroll;
 gesture_t current_gesture;
 double last_zoom_distance;
+bool is_click = false;
 
 static int test_grab(int fd) {
   int rc;
@@ -113,7 +114,7 @@ static void init_gesture() {
  */
 static uint8_t process_key_event(struct input_event event) {
   uint8_t finger_count;
-  if (event.value == 1) {
+  if (event.value == 1 && !is_click) {
     switch (event.code) {
       case BTN_TOOL_FINGER:
         finger_count = 1;
@@ -130,11 +131,22 @@ static uint8_t process_key_event(struct input_event event) {
       case BTN_TOOL_QUINTTAP:
         finger_count = 5;
         break;
+      case BTN_LEFT:
+        is_click = true;
+        finger_count = 0;
+        break;
       default:
         finger_count = 0;
     }
-  } else if (event.value == 0 && event.code == BTN_TOOL_FINGER) {
-    finger_count = 0;
+  } else if (event.value == 0) {
+    switch (event.code) {
+      case BTN_TOOL_FINGER:
+        finger_count = 0;
+        break;
+      case BTN_LEFT:
+        is_click = false;
+        break;
+    }
   }
   return finger_count;
 }
