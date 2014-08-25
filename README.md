@@ -16,7 +16,7 @@ module uinput or compile it to the kernel for using linux-touch-gestures.
 
 ## Required libraries
 
-The only need extra library should be [libiniparser](http://ndevilla.free.fr/iniparser/html/index.html).
+The only needed extra library should be [libiniparser](http://ndevilla.free.fr/iniparser/html/index.html).
 
 ## Compile and install
 
@@ -45,8 +45,8 @@ The configuration is store in an ini file with the following sections and keys (
   * Enable -> enable the 2 finger zoom (true, **false**)
   * Delta -> move distance of a finger for a zoom event (integer, **200**)
 * [Thresholds]
-  * Vertical -> threshold for vertical swipe events in percent (unsigned integer, **15**)
-  * Horizontal -> threshold for horizontal swipe events in percent (unsigned integer, **15**)
+  * Vertical -> threshold for vertical swipe events in percent of the touchpad's height (unsigned integer, **15**)
+  * Horizontal -> threshold for horizontal swipe events in percent of the touchpad's width (unsigned integer, **15**)
 * [2-Fingers]
   * Up -> combination of keys that should be emulated by swiping with 2 fingers up
   * Down -> combination of keys that should be emulated by swiping with 2 fingers down
