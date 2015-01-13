@@ -69,6 +69,7 @@ typedef struct gesture_start {
 typedef struct scroll_thread_params {
   uint8_t delta;
   int code;
+  bool invert;
   void (*callback)(input_event_array_t*);
 } scroll_thread_params_t;
 
@@ -222,10 +223,10 @@ static void set_input_event(struct input_event *input_event, int type, int code,
 #define set_key_event(key_event, code, value) set_input_event(key_event, EV_KEY, code, value)
 #define set_rel_event(rel_event, code, value) set_input_event(rel_event, EV_REL, code, value)
 
-static input_event_array_t *do_scroll(double distance, int32_t delta, int rel_code) {
+static input_event_array_t *do_scroll(double distance, int32_t delta, int rel_code, bool invert) {
   input_event_array_t *result = NULL;
   // increment the scroll width by the current moved distance
-  scroll.width += distance;
+  scroll.width += distance * (invert ? -1 : 1);
   // a scroll width of delta means scroll one "scroll-unit" therefore a scroll event
   // can be first triggered if the absolute value of scroll.width exeeded delta
   if (fabs(scroll.width) > fabs(delta)) {
@@ -240,7 +241,7 @@ static input_event_array_t *do_scroll(double distance, int32_t delta, int rel_co
 
 static input_event_array_t *do_zoom(double distance, int32_t delta) {
   input_event_array_t *result = NULL;
-  input_event_array_t *tmp = do_scroll(distance, delta, REL_WHEEL);
+  input_event_array_t *tmp = do_scroll(distance, delta, REL_WHEEL, false);
   if (tmp) {
     result = new_input_event_array(6);
     // press CTRL
@@ -368,7 +369,7 @@ static input_event_array_t *process_syn_event(struct input_event event,
             direction = RIGHT;
           }
         } else if (current_gesture == SCROLL) {
-          result = do_scroll(mt_slots.last_points[0].x - mt_slots.points[0].x, config.scroll.horz_delta, REL_HWHEEL);
+          result = do_scroll(mt_slots.last_points[0].x - mt_slots.points[0].x, config.scroll.horz_delta, REL_HWHEEL, config.scroll.invert_horz);
         }
       } else {
         if (current_gesture == NO_GESTURE) {
@@ -382,7 +383,7 @@ static input_event_array_t *process_syn_event(struct input_event event,
             direction = DOWN;
           }
         } else if (current_gesture == SCROLL) {
-          result = do_scroll(mt_slots.points[0].y - mt_slots.last_points[0].y, config.scroll.vert_delta, REL_WHEEL);
+          result = do_scroll(mt_slots.points[0].y - mt_slots.last_points[0].y, config.scroll.vert_delta, REL_WHEEL, config.scroll.invert_vert);
         }
       }
     }
@@ -433,7 +434,7 @@ static int32_t get_axix_offset(int fd, int axis) {
       .tv_nsec = 5000000 \
     };\
     nanosleep(&tim, NULL); \
-    input_event_array_t *events = do_scroll(velocity * 5, thread_params->delta, thread_params->code); \
+    input_event_array_t *events = do_scroll(velocity * 5, thread_params->delta, thread_params->code, thread_params->invert); \
     if (events) { \
       thread_params->callback(events); \
     } \
@@ -505,10 +506,12 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
             if (fabs(scroll.x_velocity * config.scroll.horz_delta) > fabs(scroll.y_velocity * config.scroll.vert_delta)) {
               params.delta = config.scroll.horz_delta;
               params.code = REL_HWHEEL;
+              params.invert = config.scroll.invert_horz;
               scroll.y_velocity = 0;
             } else {
               params.delta = config.scroll.vert_delta;
               params.code = REL_WHEEL;
+              params.invert = config.scroll.invert_vert;
               scroll.x_velocity = 0;
             }
             pthread_create(&scroll_thread, NULL, &scroll_thread_function, (void*) &params);
