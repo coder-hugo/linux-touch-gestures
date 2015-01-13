@@ -171,7 +171,7 @@ static double calcualte_velocity(struct input_event event1, struct input_event e
   return distance / time_delta;
 }
 
-static void process_abs_event(struct input_event event) {
+static void process_abs_event(struct input_event event, point_t offsets) {
   if (event.code == ABS_MT_SLOT) {
     // store the current mt_slot
     mt_slots.active = event.value;
@@ -191,7 +191,7 @@ static void process_abs_event(struct input_event event) {
         }
         mt_slots.last_points[mt_slots.active].x = mt_slots.points[mt_slots.active].x;
         // store the current x position for the current mt_slot
-        mt_slots.points[mt_slots.active].x = event.value;
+        mt_slots.points[mt_slots.active].x = event.value - offsets.x;
         break;
       case ABS_MT_POSITION_Y:
         // if finger count matches SCROLL_FINGER_COUNT and the ABS_MT_POSITION_Y is for the first finger
@@ -205,7 +205,7 @@ static void process_abs_event(struct input_event event) {
         }
         mt_slots.last_points[mt_slots.active].y = mt_slots.points[mt_slots.active].y;
         // store the current y position for the current mt_slot
-        mt_slots.points[mt_slots.active].y = event.value;
+        mt_slots.points[mt_slots.active].y = event.value - offsets.y;
         break;
     }
   }
@@ -315,8 +315,11 @@ static bool check_mt_slots() {
   if (result && finger_count > 1) {
     result = is_valid_point(mt_slots.last_points[1]) && is_valid_point(mt_slots.points[1]);
   }
+
   return result;
 }
+
+uint32_t syn_counter = 0;
 
 static input_event_array_t *process_syn_event(struct input_event event,
                                               configuration_t config,
@@ -415,6 +418,14 @@ static int32_t get_axix_threshold(int fd, int axis, uint8_t percentage) {
   return (absinfo.maximum - absinfo.minimum) * percentage / 100;
 }
 
+static int32_t get_axix_offset(int fd, int axis) {
+  struct input_absinfo absinfo;
+  if (ioctl(fd, EVIOCGABS(axis), &absinfo) < 0) {
+    return -1;
+  }
+  return absinfo.minimum;
+}
+
 #define slowdown_scroll(velocity, thread_params) \
   while (velocity != 0) { \
     struct timespec tim = { \
@@ -455,6 +466,10 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
   point_t thresholds;
   thresholds.x = get_axix_threshold(fd, ABS_X, config.horz_threshold_percentage);
   thresholds.y = get_axix_threshold(fd, ABS_Y, config.vert_threshold_percentage);
+
+  point_t offsets;
+  offsets.x = get_axix_offset(fd, ABS_X);
+  offsets.y = get_axix_offset(fd, ABS_Y);
 
   pthread_t scroll_thread = NULL;
 
@@ -500,7 +515,7 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
           }
           break;
         case EV_ABS:
-          process_abs_event(ev[i]);
+            process_abs_event(ev[i], offsets);
           break;
         case EV_SYN: {
             input_event_array_t *input_events = process_syn_event(ev[i], config, thresholds);
