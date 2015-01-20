@@ -172,7 +172,7 @@ static double calcualte_velocity(struct input_event event1, struct input_event e
   return distance / time_delta;
 }
 
-static void process_abs_event(struct input_event event, point_t offsets) {
+static void process_abs_event(struct input_event event, point_t offsets, bool invert_horz_scroll, bool invert_vert_scroll) {
   if (event.code == ABS_MT_SLOT) {
     // store the current mt_slot
     mt_slots.active = event.value;
@@ -186,7 +186,7 @@ static void process_abs_event(struct input_event event, point_t offsets) {
           if (scroll.last_x_abs_event.type == EV_ABS && scroll.last_x_abs_event.code == ABS_MT_POSITION_X) {
             // invert the velocity to scroll to the correct direction as a positive x direction
             // on the touchpad mean scroll left (negative scroll direction)
-            scroll.x_velocity = -calcualte_velocity(scroll.last_x_abs_event, event);
+            scroll.x_velocity = calcualte_velocity(scroll.last_x_abs_event, event) * (invert_horz_scroll ? 1 : -1);
           }
           scroll.last_x_abs_event = event;
         }
@@ -200,7 +200,7 @@ static void process_abs_event(struct input_event event, point_t offsets) {
         if (mt_slots.active == 0 && finger_count == SCROLL_FINGER_COUNT) {
           // check wether a correct input event was set to scroll.last_y_abs_event
           if (scroll.last_y_abs_event.type == EV_ABS && scroll.last_y_abs_event.code == ABS_MT_POSITION_Y) {
-            scroll.y_velocity = calcualte_velocity(scroll.last_y_abs_event, event);
+            scroll.y_velocity = calcualte_velocity(scroll.last_y_abs_event, event) * (invert_vert_scroll ? -1 : 1);
           }
           scroll.last_y_abs_event = event;
         }
@@ -518,7 +518,7 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
           }
           break;
         case EV_ABS:
-            process_abs_event(ev[i], offsets);
+            process_abs_event(ev[i], offsets, config.scroll.invert_horz, config.scroll.invert_vert);
           break;
         case EV_SYN: {
             input_event_array_t *input_events = process_syn_event(ev[i], config, thresholds);
