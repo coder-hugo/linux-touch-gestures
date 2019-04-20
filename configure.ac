@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([linux-touch-gestures], [0.9.0], [coder-hugo@users.noreply.github.com])
+AC_INIT([linux-touch-gestures], [1.0.0], [coder-hugo@users.noreply.github.com])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/main.c])
 
