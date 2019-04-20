@@ -35,7 +35,9 @@ make install
 The configuration is store in an ini file with the following sections and keys (The default values are marked as bold):
 
 * [Gernaral]
-  * TouchDevice (required) -> path to the touch device (/dev/input/...)
+  * TouchDevice -> path to the touch device (/dev/input/...), if none given linux-touch-gestures tries to find a applicable input device
+  * Retries -> if the input device is not yet available retry it again x times (integer, **2**)
+  * RetryDelay -> the amount of seconds to wait before looking again for the input device (integer, **5**)
 * [Scroll]
   * Vertical -> enable vertical scrolling (true, **false**)
   * Horizontal -> enable horizontal scrolling (true, **false**)
