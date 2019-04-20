@@ -165,6 +165,7 @@ int main(int argc, char *argv[]) {
       die("Failed to open input device");
     }
     printf("Opened input device\n");
+    fflush(stdout);
     process_events(touch_device_fd, config, &execute_events);
 
     close(touch_device_fd);
