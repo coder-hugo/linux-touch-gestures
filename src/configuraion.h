@@ -41,6 +41,8 @@ typedef struct keys_array {
 
 typedef struct configuration {
   char *touch_device_path;
+  uint8_t retries;
+  uint8_t retry_delay;
   struct scroll_options {
     bool vert;
     bool horz;

@@ -78,6 +78,8 @@ configuration_t read_config(const char *filename) {
     errno = EINVAL;
     die("error: no touch device defined");
   }
+  result.retries = (uint8_t) iniparser_getint(ini, "general:retries", 2);
+  result.retry_delay = (uint8_t) iniparser_getint(ini, "general:retrydelay", 5);
   result.scroll.vert = iniparser_getboolean(ini, "scroll:vertical", false);
   result.scroll.horz = iniparser_getboolean(ini, "scroll:horizontal", false);
   result.scroll.vert_delta = (int8_t) iniparser_getint(ini, "scroll:verticaldelta", 79);
@@ -97,7 +99,7 @@ configuration_t read_config(const char *filename) {
       fill_keys_array(&result.swipe_keys[i][j].keys, iniparser_getstring(ini, ini_key, NULL));
     }
   }
-  
+
   iniparser_freedict(ini);
   return result;
 }

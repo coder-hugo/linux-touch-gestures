@@ -66,10 +66,20 @@ int main(int argc, char *argv[]) {
     uinput_fd = init_uinput(keys);
     free(keys);
 
-    touch_device_fd = open(config.touch_device_path, O_RDONLY);
-    if (touch_device_fd < 0) {
-      die("error: open");
+    int8_t retries = 0;
+    while (retries < config.retries + 1) {
+      printf("Looking for input device: %s (Attempt %i/%i)\n", config.touch_device_path, retries + 1, config.retries + 1);
+      touch_device_fd = open(config.touch_device_path, O_RDONLY);
+      if (touch_device_fd > 0) {
+        break;
+      }
+      sleep(config.retry_delay);
+      retries++;
     }
+    if (touch_device_fd < 0) {
+      die("Failed to open input device");
+    }
+    printf("Opened input device: %s\n", config.touch_device_path);
     process_events(touch_device_fd, config, &execute_events);
 
     close(touch_device_fd);
