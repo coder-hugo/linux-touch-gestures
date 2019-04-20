@@ -132,10 +132,10 @@ static char* scan_devices(void) {
 
 static int open_touch_device(configuration_t config, int retry) {
   if (config.touch_device_path) {
-    printf("Looking for input device %s (Attempt %i/%i)\n", config.touch_device_path, retry + 1, config.retries + 1);
+    printf("Looking for input device: %s (Attempt %i/%i)\n", config.touch_device_path, retry + 1, config.retries + 1);
     return open(config.touch_device_path, O_RDONLY);
   } else {
-    printf("Looking for multi-touch input device: (Attempt %i/%i)\n", retry + 1, config.retries + 1);
+    printf("Looking for multi-touch input device (Attempt %i/%i)\n", retry + 1, config.retries + 1);
     char *filename = scan_devices();
     if (filename) {
       return open(filename, O_RDONLY);
