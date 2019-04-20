@@ -34,7 +34,7 @@
 char *directions[4] = { "up", "down", "left", "right" };
 
 static void clean_config(configuration_t *config) {
-  int32_t i, j, k;
+  int i, j, k;
   for (i = 0; i < MAX_FINGERS; i++) {
     for (j = 0; j < DIRECTIONS_COUNT; j++) {
       for (k = 0; k < MAX_KEYS_PER_GESTURE; k++) {
@@ -47,7 +47,7 @@ static void clean_config(configuration_t *config) {
 static void fill_keys_array(int (*keys_array)[MAX_KEYS_PER_GESTURE], char *keys) {
   if (keys) {
     char *ptr = strtok(keys, "+");
-    uint8_t i = 0;
+    unsigned int i = 0;
     while (ptr) {
       if (i >= MAX_KEYS_PER_GESTURE) {
         fprintf(stderr, "error: for each gesture only %d keystrokes are allowed\n", MAX_KEYS_PER_GESTURE);
@@ -75,23 +75,22 @@ configuration_t read_config(const char *filename) {
       strcpy(result.touch_device_path, touch_device_path);
     }
   } else {
-    errno = EINVAL;
-    die("error: no touch device defined");
+    result.touch_device_path = NULL;
   }
-  result.retries = (uint8_t) iniparser_getint(ini, "general:retries", 2);
-  result.retry_delay = (uint8_t) iniparser_getint(ini, "general:retrydelay", 5);
+  result.retries = (unsigned int) iniparser_getint(ini, "general:retries", 2);
+  result.retry_delay = (unsigned int) iniparser_getint(ini, "general:retrydelay", 5);
   result.scroll.vert = iniparser_getboolean(ini, "scroll:vertical", false);
   result.scroll.horz = iniparser_getboolean(ini, "scroll:horizontal", false);
-  result.scroll.vert_delta = (int8_t) iniparser_getint(ini, "scroll:verticaldelta", 79);
-  result.scroll.horz_delta = (int8_t) iniparser_getint(ini, "scroll:horizontaldelta", 30);
+  result.scroll.vert_delta = (int) iniparser_getint(ini, "scroll:verticaldelta", 79);
+  result.scroll.horz_delta = (int) iniparser_getint(ini, "scroll:horizontaldelta", 30);
   result.scroll.invert_vert = iniparser_getboolean(ini, "scroll:invertvertical", false);
   result.scroll.invert_horz = iniparser_getboolean(ini, "scroll:inverthorizontal", false);
   result.vert_threshold_percentage = iniparser_getint(ini, "thresholds:vertical", 15);
   result.horz_threshold_percentage = iniparser_getint(ini, "thresholds:horizontal", 15);
   result.zoom.enabled = iniparser_getboolean(ini, "zoom:enabled", false);
-  result.zoom.delta = (uint8_t) iniparser_getint(ini, "zoom:delta", 200);
+  result.zoom.delta = (unsigned int) iniparser_getint(ini, "zoom:delta", 200);
 
-  uint8_t i, j;
+  unsigned int i, j;
   for (i = 0; i < MAX_FINGERS; i++) {
     for (j = 0; j < DIRECTIONS_COUNT; j++) {
       char ini_key[16];

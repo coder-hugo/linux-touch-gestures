@@ -41,22 +41,22 @@ typedef struct keys_array {
 
 typedef struct configuration {
   char *touch_device_path;
-  uint8_t retries;
-  uint8_t retry_delay;
+  unsigned int retries;
+  unsigned int retry_delay;
   struct scroll_options {
     bool vert;
     bool horz;
-    int8_t vert_delta;
-    int8_t horz_delta;
+    int vert_delta;
+    int horz_delta;
     bool invert_vert;
     bool invert_horz;
   } scroll;
   struct zoom_options {
     bool enabled;
-    uint8_t delta;
+    unsigned int delta;
   } zoom;
-  uint8_t vert_threshold_percentage;
-  uint8_t horz_threshold_percentage;
+  unsigned int vert_threshold_percentage;
+  unsigned int horz_threshold_percentage;
   keys_array_t swipe_keys[MAX_FINGERS][DIRECTIONS_COUNT];
 } configuration_t;
 

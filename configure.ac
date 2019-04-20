@@ -20,10 +20,7 @@ AC_CHECK_HEADERS([linux/input.h linux/uinput.h], [], [AC_MSG_ERROR([The linux he
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
-AC_TYPE_INT32_T
 AC_TYPE_SIZE_T
-AC_TYPE_UINT32_T
-AC_TYPE_UINT8_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC

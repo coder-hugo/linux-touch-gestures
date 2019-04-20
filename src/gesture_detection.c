@@ -49,7 +49,7 @@ typedef struct point {
 } point_t;
 
 typedef struct mt_slots {
-  uint8_t active;
+  unsigned int active;
   point_t points[2];
   point_t last_points[2];
 } mt_slots_t;
@@ -67,7 +67,7 @@ typedef struct gesture_start {
 } gesture_start_t;
 
 typedef struct scroll_thread_params {
-  uint8_t delta;
+  unsigned int delta;
   int code;
   bool invert;
   void (*callback)(input_event_array_t*);
@@ -77,7 +77,7 @@ typedef enum gesture { NO_GESTURE, SCROLL, ZOOM, SWIPE } gesture_t;
 
 mt_slots_t mt_slots;
 gesture_start_t gesture_start;
-uint8_t finger_count;
+unsigned int finger_count;
 volatile scroll_t scroll;
 gesture_t current_gesture;
 double last_zoom_distance;
@@ -93,7 +93,7 @@ static int test_grab(int fd) {
 }
 
 static double calculate_distance(point_t p1, point_t p2) {
-  int32_t x_distance, y_distance;
+  int x_distance, y_distance;
   x_distance = p1.x - p2.x;
   y_distance = p1.y - p2.y;
   return sqrt((x_distance * x_distance) + (y_distance * y_distance));
@@ -123,8 +123,8 @@ static void init_gesture() {
 /*
  * @return number of fingers on touch device
  */
-static uint8_t process_key_event(struct input_event event) {
-  uint8_t finger_count;
+static unsigned int process_key_event(struct input_event event) {
+  unsigned int finger_count;
   if (event.value == 1 && !is_click) {
     switch (event.code) {
       case BTN_TOOL_FINGER:
@@ -166,7 +166,7 @@ static uint8_t process_key_event(struct input_event event) {
  * @return velocity in distance per milliseconds
  */
 static double calcualte_velocity(struct input_event event1, struct input_event event2) {
-  int32_t distance = event2.value - event1.value;
+  int distance = event2.value - event1.value;
   double time_delta = 
     event2.time.tv_sec * 1000 + event2.time.tv_usec / 1000 - event1.time.tv_sec * 1000 - event1.time.tv_usec / 1000;
   return distance / time_delta;
@@ -223,7 +223,7 @@ static void set_input_event(struct input_event *input_event, int type, int code,
 #define set_key_event(key_event, code, value) set_input_event(key_event, EV_KEY, code, value)
 #define set_rel_event(rel_event, code, value) set_input_event(rel_event, EV_REL, code, value)
 
-static input_event_array_t *do_scroll(double distance, int32_t delta, int rel_code, bool invert) {
+static input_event_array_t *do_scroll(double distance, int delta, int rel_code, bool invert) {
   input_event_array_t *result = NULL;
   // increment the scroll width by the current moved distance
   scroll.width += distance * (invert ? -1 : 1);
@@ -239,7 +239,7 @@ static input_event_array_t *do_scroll(double distance, int32_t delta, int rel_co
   return result;
 }
 
-static input_event_array_t *do_zoom(double distance, int32_t delta) {
+static input_event_array_t *do_zoom(double distance, int delta) {
   input_event_array_t *result = NULL;
   input_event_array_t *tmp = do_scroll(distance, delta, REL_WHEEL, false);
   if (tmp) {
@@ -320,7 +320,7 @@ static bool check_mt_slots() {
   return result;
 }
 
-uint32_t syn_counter = 0;
+unsigned int syn_counter = 0;
 
 static input_event_array_t *process_syn_event(struct input_event event,
                                               configuration_t config,
@@ -354,7 +354,7 @@ static input_event_array_t *process_syn_event(struct input_event event,
       }
       last_zoom_distance = finger_distance;
     } else {
-      int32_t x_distance, y_distance;
+      int x_distance, y_distance;
       x_distance = gesture_start.point.x - mt_slots.points[0].x;
       y_distance = gesture_start.point.y - mt_slots.points[0].y;
       if (fabs(x_distance) > fabs(y_distance)) {
@@ -388,7 +388,7 @@ static input_event_array_t *process_syn_event(struct input_event event,
       }
     }
     if (direction != NONE) {
-      uint8_t i;
+      unsigned int i;
       for (i = MAX_KEYS_PER_GESTURE; i > 0; i--) {
         int key = config.swipe_keys[FINGER_TO_INDEX(finger_count)][direction].keys[i - 1];
         if (key > 0) {
@@ -411,7 +411,7 @@ static input_event_array_t *process_syn_event(struct input_event event,
   return result ? result : new_input_event_array(0);
 }
 
-static int32_t get_axix_threshold(int fd, int axis, uint8_t percentage) {
+static int get_axix_threshold(int fd, int axis, unsigned int percentage) {
   struct input_absinfo absinfo;
   if (ioctl(fd, EVIOCGABS(axis), &absinfo) < 0) {
     return -1;
@@ -419,7 +419,7 @@ static int32_t get_axix_threshold(int fd, int axis, uint8_t percentage) {
   return (absinfo.maximum - absinfo.minimum) * percentage / 100;
 }
 
-static int32_t get_axix_offset(int fd, int axis) {
+static int get_axix_offset(int fd, int axis) {
   struct input_absinfo absinfo;
   if (ioctl(fd, EVIOCGABS(axis), &absinfo) < 0) {
     return -1;
@@ -472,7 +472,7 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
   offsets.x = get_axix_offset(fd, ABS_X);
   offsets.y = get_axix_offset(fd, ABS_Y);
 
-  pthread_t scroll_thread = NULL;
+  pthread_t scroll_thread = (pthread_t) NULL;
 
   if (thresholds.x < 0 || thresholds.y < 0) {
     return;

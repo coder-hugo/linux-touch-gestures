@@ -446,7 +446,7 @@ struct key keys[KEYS_COUNT] = {
 };
 
 int get_key_code(char *key_name) {
-  uint32_t low, high, mid;
+  unsigned int low, high, mid;
   low = 0;
   high = KEYS_COUNT - 1;
   while (low <= high) {

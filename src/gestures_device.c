@@ -81,7 +81,7 @@ int destroy_uinput(int fd) {
 }
 
 void send_events(int fd, input_event_array_t *input_events) {
-  uint8_t i;
+  unsigned int i;
   if (input_events->length > 0) {
     for (i = 0; i < input_events->length; i++) {
       if (write(fd, &input_events->data[i], sizeof(struct input_event)) < 0) {
