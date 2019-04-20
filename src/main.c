@@ -56,7 +56,7 @@ static void execute_events(input_event_array_t *input_events) {
 static int_array_t *get_keys_array(configuration_t config) {
   unsigned int i, j, k;
   unsigned int keys_count = 0;
-  int_array_t *keys = new_int_array(MAX_FINGERS * DIRECTIONS_COUNT * MAX_KEYS_PER_GESTURE);
+  int_array_t *keys = new_int_array(MAX_FINGERS * DIRECTIONS_COUNT * MAX_KEYS_PER_GESTURE + 1);
   for (i = 0; i < MAX_FINGERS; i++) {
     for (j = 0; j < DIRECTIONS_COUNT; j++) {
       for (k = 0; k < MAX_KEYS_PER_GESTURE; k++) {
@@ -66,6 +66,10 @@ static int_array_t *get_keys_array(configuration_t config) {
         }
       }
     }
+  }
+  if (config.zoom.enabled) {
+    keys->data[keys_count] = KEY_LEFTCTRL;
+    keys_count++;
   }
   keys->length = keys_count;
   return keys;
