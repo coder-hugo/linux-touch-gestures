@@ -28,6 +28,6 @@
 #include "configuraion.h"
 #include "input_event_array.h"
 
-void process_events(int fd, configuration_t config, void (*callback)(input_event_array_t*));
+int process_events(int fd, configuration_t config, void (*callback)(input_event_array_t*));
 
 #endif // GESTURE_DETECTION_H_

@@ -146,6 +146,7 @@ static int open_touch_device(configuration_t config, int retry) {
 }
 
 int main(int argc, char *argv[]) {
+  int exit_code = 0;
   if (argc > 1) {
     configuration_t config = read_config(argv[1]);
     int_array_t *keys = get_keys_array(config);
@@ -166,10 +167,10 @@ int main(int argc, char *argv[]) {
     }
     printf("Opened input device\n");
     fflush(stdout);
-    process_events(touch_device_fd, config, &execute_events);
+    exit_code = process_events(touch_device_fd, config, &execute_events);
 
     close(touch_device_fd);
     destroy_uinput(uinput_fd);
   }
-  return 0;
+  return exit_code;
 }

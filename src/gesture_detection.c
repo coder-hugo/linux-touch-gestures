@@ -460,7 +460,7 @@ static void *scroll_thread_function(void *val) {
   return NULL;
 }
 
-void process_events(int fd, configuration_t config, void (*callback)(input_event_array_t*)) {
+int process_events(int fd, configuration_t config, void (*callback)(input_event_array_t*)) {
   struct input_event ev[64];
   int i, rd;
 
@@ -487,7 +487,7 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
 
     if (rd < (int) sizeof(struct input_event)) {
       printf("expected %d bytes, got %d\n", (int) sizeof(struct input_event), rd);
-      return;
+      return 1;
     }
 
     for (i = 0; i < rd / sizeof(struct input_event); i++) {
@@ -529,4 +529,5 @@ void process_events(int fd, configuration_t config, void (*callback)(input_event
       }
     }
   }
+  return 0;
 }
